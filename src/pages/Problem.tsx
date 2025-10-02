@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,11 @@ import {
   ChevronUp,
   ChevronDown,
   Lightbulb,
+  MessageCircle,
+  Mic,
+  MicOff,
+  X,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,10 +51,20 @@ const Problem = () => {
   const [showResults, setShowResults] = useState(false);
   const [language, setLanguage] = useState("python");
   const [selectedTestCase, setSelectedTestCase] = useState<number | null>(null);
-  const [isBottomPanelCollapsed, setIsBottomPanelCollapsed] = useState(false);
-  const [aiInsights, setAiInsights] = useState<string[]>([]);
+  const [isBottomPanelCollapsed, setIsBottomPanelCollapsed] = useState(true); // Collapsed by default
+  const [isAiInsightsPanelVisible, setIsAiInsightsPanelVisible] = useState(false); // Hidden by default
+  const [aiInsights, setAiInsights] = useState<{ text: string; timestamp: Date }[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Chat and Voice mode states
+  const [aiMode, setAiMode] = useState<'insights' | 'chat' | 'voice'>('insights');
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'assistant'; message: string; timestamp: Date }[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const editorRef = useRef<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   
   const [code, setCode] = useState(`class Solution:
     def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:
@@ -117,6 +133,10 @@ public:
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
+    
+    // Only analyze if in insights mode
+    if (aiMode !== 'insights') return;
+    
     setIsAnalyzing(true);
     
     // Clear existing timer
@@ -178,7 +198,109 @@ public:
       insights.push("👀 Keep writing code to get more insights...");
     }
     
-    setAiInsights(insights);
+    // Append new insights to existing ones with timestamps
+    const newInsights = insights.map(text => ({ 
+      text, 
+      timestamp: new Date() 
+    }));
+    
+    setAiInsights(prev => [...newInsights, ...prev]); // New insights at the top
+  };
+
+  // Chat functionality
+  const handleChatMode = () => {
+    setAiMode('chat');
+    setIsAiInsightsPanelVisible(true);
+    if (chatMessages.length === 0) {
+      setChatMessages([{
+        role: 'assistant',
+        message: '👋 Hi! I\'m here to help you solve this problem. Ask me anything about the code, algorithm, or approach!',
+        timestamp: new Date()
+      }]);
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    
+    const userMessage = {
+      role: 'user' as const,
+      message: chatInput,
+      timestamp: new Date()
+    };
+    
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    
+    // Simulate AI response
+    setTimeout(() => {
+      const responses = [
+        "That's a great question! For this problem, you'll need to consider how to handle the carry value when adding two digits.",
+        "Let me help you with that. Try using a while loop to iterate through both linked lists simultaneously.",
+        "Good thinking! Don't forget to handle the edge case where one list is longer than the other.",
+        "Here's a tip: Using a dummy node at the beginning can simplify your list construction.",
+        "To optimize your solution, think about the time complexity. Can you solve it in O(max(m,n)) time?"
+      ];
+      
+      const assistantMessage = {
+        role: 'assistant' as const,
+        message: responses[Math.floor(Math.random() * responses.length)],
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => [...prev, assistantMessage]);
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 1000);
+  };
+
+  const handleVoiceMode = () => {
+    setAiMode('voice');
+    setIsAiInsightsPanelVisible(true);
+    setIsVoiceActive(true);
+    setVoiceTranscript('Listening...');
+    
+    // Simulate voice recognition
+    setTimeout(() => {
+      setVoiceTranscript('You said: "How do I handle the carry in addition?"');
+      setTimeout(() => {
+        setVoiceTranscript('AI: To handle the carry, create a variable to store it and add it to the next pair of digits. Update the carry for each iteration.');
+      }, 2000);
+    }, 2000);
+  };
+
+  const handleStopVoice = () => {
+    setIsVoiceActive(false);
+    setVoiceTranscript('');
+    setAiMode('insights');
+  };
+
+  const handleBackToInsights = () => {
+    setAiMode('insights');
+  };
+
+  // Settings dialog handler
+  const handleSettings = () => {
+    toast.info("Settings", {
+      description: "Editor settings will open here"
+    });
+  };
+
+  // Fullscreen handler
+  const handleFullscreen = () => {
+    if (editorRef.current) {
+      const editorElement = document.querySelector('.monaco-editor');
+      if (editorElement) {
+        if (!document.fullscreenElement) {
+          editorElement.requestFullscreen().catch(err => {
+            toast.error("Fullscreen not supported");
+          });
+          toast.success("Entered fullscreen mode");
+        } else {
+          document.exitFullscreen();
+          toast.success("Exited fullscreen mode");
+        }
+      }
+    }
   };
 
   // Cleanup debounce timer on unmount
@@ -189,6 +311,13 @@ public:
       }
     };
   }, []);
+
+  // Auto-scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (aiMode === 'chat' && chatMessages.length > 0) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, aiMode]);
 
   const handleRun = () => {
     setShowResults(true);
@@ -364,8 +493,11 @@ public:
       {/* Horizontal Resize Handle */}
       <ResizableHandle withHandle className="hover:bg-primary/20 transition-colors" />
 
-      {/* Right Panel - Code Editor & Tests */}
+      {/* Right Panel - Code Editor & Tests & AI Insights */}
       <ResizablePanel defaultSize={60} minSize={40}>
+        <ResizablePanelGroup direction="horizontal">
+          {/* Code Editor & Tests Section */}
+          <ResizablePanel defaultSize={75} minSize={50}>
         <div className="h-full flex flex-col">
           <ResizablePanelGroup direction="vertical">
             {/* Code Editor Panel */}
@@ -385,16 +517,23 @@ public:
                         <SelectItem value="cpp">C++</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Badge variant="secondary" className="text-xs">
-                      Auto-save
-                    </Badge>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setIsAiInsightsPanelVisible(!isAiInsightsPanelVisible)}
+                      className="text-primary"
+                    >
+                      <Sparkles className="h-4 w-4 mr-1" />
+                      {isAiInsightsPanelVisible ? "Hide" : "Show"} AI Insights
+                    </Button>
+                    <Separator orientation="vertical" className="h-4" />
+                    <Button variant="ghost" size="sm" onClick={handleSettings}>
                       <Settings className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={handleFullscreen}>
                       <Maximize2 className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setCode(languageTemplates[language])}>
@@ -449,10 +588,6 @@ public:
                       <TabsList className="bg-transparent">
                         <TabsTrigger value="testcase">Testcase</TabsTrigger>
                         <TabsTrigger value="result">Test Result</TabsTrigger>
-                        <TabsTrigger value="insights">
-                          <Lightbulb className="h-4 w-4 mr-1" />
-                          AI Insights
-                        </TabsTrigger>
                       </TabsList>
                       
                       {/* Run and Submit buttons with collapse button */}
@@ -566,27 +701,97 @@ public:
                       </p>
                     )}
                   </TabsContent>
+                </Tabs>
+              </div>
+            </ResizablePanel>
+            )}
+          </ResizablePanelGroup>
+        </div>
+      </ResizablePanel>
 
-                  {/* AI Insights Tab */}
-                  <TabsContent value="insights" className="flex-1 p-3 custom-scrollbar overflow-y-auto m-0">
+      {/* Conditional ResizableHandle and AI Insights Panel */}
+      {isAiInsightsPanelVisible && (
+        <>
+          {/* ResizableHandle between Code Editor and AI Insights */}
+          <ResizableHandle withHandle />
+
+          {/* Right Panel - AI Insights Sidebar */}
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+            <div className="h-full w-full flex flex-col bg-background border-l border-border" style={{ height: "calc(100vh - 60px)", maxHeight: "calc(100vh - 60px)" }}>
+              {/* Header with Mode Icons */}
+              <div className="flex items-center justify-between p-3 border-b border-border shrink-0">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-sm">
+                    {aiMode === 'chat' ? 'AI Chat' : aiMode === 'voice' ? 'Voice Assistant' : 'AI Insights'}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-1">
+                  {aiMode === 'insights' ? (
+                    <>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={handleChatMode}
+                        className="h-8 w-8 p-0"
+                        title="Chat with AI"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={handleVoiceMode}
+                        className="h-8 w-8 p-0"
+                        title="Voice Assistant"
+                      >
+                        <Mic className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={handleBackToInsights}
+                      className="h-8 w-8 p-0"
+                      title="Back to Insights"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Content Area */}
+              <div className="flex-1 flex flex-col overflow-hidden" style={{ height: "calc(100vh - 120px)" }}>
+                {aiMode === 'insights' && (
+                  <div className="h-full w-full p-3 custom-scrollbar overflow-y-auto">
                     <div className="space-y-4">
-                      {isAnalyzing ? (
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                      {isAnalyzing && (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm mb-4">
                           <Sparkles className="h-4 w-4 animate-pulse text-primary" />
                           <span>Analyzing your code...</span>
                         </div>
-                      ) : aiInsights.length > 0 ? (
+                      )}
+                      {aiInsights.length > 0 ? (
                         <div className="space-y-3">
                           {aiInsights.map((insight, index) => (
                             <div 
                               key={index}
-                              className="p-3 rounded-lg bg-primary/5 border border-primary/10 text-sm"
+                              className="p-3 rounded-lg bg-primary/5 border border-primary/10"
                             >
-                              {insight}
+                              <p className="text-sm">{insight.text}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {insight.timestamp.toLocaleTimeString([], { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit',
+                                  second: '2-digit'
+                                })}
+                              </p>
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : !isAnalyzing ? (
                         <div className="flex flex-col items-center justify-center h-32 text-center">
                           <Lightbulb className="h-8 w-8 text-muted-foreground mb-2" />
                           <p className="text-muted-foreground text-sm">
@@ -596,15 +801,114 @@ public:
                             Insights will appear 2 seconds after you stop typing
                           </p>
                         </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {aiMode === 'chat' && (
+                  <div className="h-full w-full flex flex-col">
+                    {/* Chat Messages */}
+                    <div className="flex-1 p-3 custom-scrollbar overflow-y-auto scroll-smooth" style={{ height: "calc(100vh - 185px)" }}>
+                      <div className="space-y-3">
+                        {chatMessages.map((msg, index) => (
+                          <div 
+                            key={index}
+                            className={`p-3 rounded-lg ${
+                              msg.role === 'user' 
+                                ? 'bg-primary/10 border border-primary/20 ml-4' 
+                                : 'bg-muted/50 border border-border mr-4'
+                            }`}
+                          >
+                            <p className="text-sm">{msg.message}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {msg.timestamp.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        ))}
+                        <div ref={chatEndRef} />
+                      </div>
+                    </div>
+
+                    {/* Chat Input */}
+                    <div className="p-3 border-t border-border shrink-0">
+                      <div className="flex gap-2">
+                        <Input
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                          placeholder="Ask me anything..."
+                          className="flex-1"
+                        />
+                        <Button 
+                          size="sm" 
+                          onClick={handleSendMessage}
+                          disabled={!chatInput.trim()}
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {aiMode === 'voice' && (
+                  <div className="h-full w-full p-6 flex flex-col items-center justify-center overflow-y-auto custom-scrollbar">
+                    <div className="text-center space-y-4">
+                      <div className={`h-20 w-20 rounded-full flex items-center justify-center mx-auto ${
+                        isVoiceActive ? 'bg-primary/20 animate-pulse' : 'bg-muted'
+                      }`}>
+                        {isVoiceActive ? (
+                          <Mic className="h-10 w-10 text-primary" />
+                        ) : (
+                          <MicOff className="h-10 w-10 text-muted-foreground" />
+                        )}
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm font-medium mb-2">
+                          {isVoiceActive ? 'Voice Assistant Active' : 'Voice Assistant Stopped'}
+                        </p>
+                        {voiceTranscript && (
+                          <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg max-h-40 overflow-y-auto custom-scrollbar">
+                            {voiceTranscript}
+                          </p>
+                        )}
+                      </div>
+
+                      {isVoiceActive ? (
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={handleStopVoice}
+                          className="mt-4"
+                        >
+                          <MicOff className="h-4 w-4 mr-2" />
+                          Stop Voice Assistant
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={handleVoiceMode}
+                          className="mt-4"
+                        >
+                          <Mic className="h-4 w-4 mr-2" />
+                          Start Voice Assistant
+                        </Button>
                       )}
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                )}
               </div>
-            </ResizablePanel>
-            )}
-          </ResizablePanelGroup>
-        </div>
+            </div>
+          </ResizablePanel>
+        </>
+      )}
+    </ResizablePanelGroup>
       </ResizablePanel>
     </ResizablePanelGroup>
       </div>

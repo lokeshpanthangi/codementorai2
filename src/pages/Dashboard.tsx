@@ -82,22 +82,22 @@ const Dashboard = () => {
       <Navbar isAuthenticated username="CodeMaster" />
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Hero Card */}
-        <Card className="gradient-primary text-white border-none shadow-xl">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-bold">Welcome back, CodeMaster!</h1>
-                <p className="text-white/90 text-lg">
-                  "The only way to learn a new programming language is by writing programs in it." - Dennis Ritchie
-                </p>
-              </div>
-              <Button variant="secondary" size="lg" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
-                Continue Learning
-              </Button>
+        {/* Hero Card - No Background */}
+        <div className="p-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="space-y-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-white">
+                Welcome back, <span className="text-violet-500">CodeMaster</span>!
+              </h1>
+              <p className="text-white/70 text-lg">
+                "The only way to learn a new programming language is by writing programs in it." - Dennis Ritchie
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <Button variant="default" size="lg">
+              Continue Learning
+            </Button>
+          </div>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

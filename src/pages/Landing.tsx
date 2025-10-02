@@ -70,7 +70,7 @@ const Landing = () => {
           {
             text: "Get Started",
             href: "/auth",
-            variant: "hero",
+            variant: "default",
           },
           {
             text: "Explore Problems",
@@ -301,7 +301,8 @@ const Landing = () => {
               <Link to="/auth">
                 <Button 
                   size="lg" 
-                  className="text-lg px-12 py-6 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white shadow-2xl shadow-violet-900/40 hover:shadow-violet-900/60 hover:scale-110 active:scale-95 transition-all duration-300 ease-out"
+                  variant="default"
+                  className="text-lg px-12 py-6"
                 >
                   <Sparkles className="mr-2 h-5 w-5" />
                   Get Started for Free
