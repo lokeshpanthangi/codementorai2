@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,9 @@ import {
   Maximize2,
   Undo2,
   Sparkles,
+  ChevronUp,
+  ChevronDown,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +44,12 @@ const Problem = () => {
   const { id } = useParams();
   const [showResults, setShowResults] = useState(false);
   const [language, setLanguage] = useState("python");
+  const [selectedTestCase, setSelectedTestCase] = useState<number | null>(null);
+  const [isBottomPanelCollapsed, setIsBottomPanelCollapsed] = useState(false);
+  const [aiInsights, setAiInsights] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   const [code, setCode] = useState(`class Solution:
     def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:
         # Write your solution here
@@ -103,10 +112,87 @@ public:
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage);
     setCode(languageTemplates[newLanguage] || "");
+    setAiInsights([]); // Clear insights when changing language
   };
+
+  const handleCodeChange = (newCode: string) => {
+    setCode(newCode);
+    setIsAnalyzing(true);
+    
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Set new timer for 2 seconds
+    debounceTimerRef.current = setTimeout(() => {
+      generateAiInsights(newCode);
+      setIsAnalyzing(false);
+    }, 2000);
+  };
+
+  const generateAiInsights = (currentCode: string) => {
+    const insights: string[] = [];
+    
+    // Check for empty solution
+    if (currentCode.includes("# Write your solution here") || currentCode.includes("// Write your solution here")) {
+      insights.push("💡 Start by understanding the problem constraints and edge cases.");
+      insights.push("🎯 Consider the data structure: How will you traverse the linked lists?");
+    } else {
+      // Check for common patterns
+      if (currentCode.includes("while") || currentCode.includes("for")) {
+        insights.push("✅ Good! You're using iteration to traverse the data structure.");
+      }
+      
+      if (currentCode.includes("carry")) {
+        insights.push("✅ Great! You're handling the carry for addition.");
+      } else if (currentCode.length > 100) {
+        insights.push("💭 Tip: Don't forget to handle carry when sum exceeds 9.");
+      }
+      
+      if (currentCode.includes("dummy") || currentCode.includes("Dummy")) {
+        insights.push("✅ Excellent! Using a dummy node simplifies list construction.");
+      }
+      
+      if (currentCode.includes("return") && !currentCode.includes("pass")) {
+        insights.push("✅ You have a return statement. Make sure it returns the correct node.");
+      }
+      
+      // Code complexity hints
+      const lineCount = currentCode.split("\n").length;
+      if (lineCount > 30) {
+        insights.push("💡 Your solution is getting long. Consider if there's a simpler approach.");
+      } else if (lineCount > 10 && lineCount < 30) {
+        insights.push("✨ Your solution looks well-structured!");
+      }
+      
+      // Language-specific tips
+      if (language === "python" && currentCode.includes("def")) {
+        if (!currentCode.includes("self")) {
+          insights.push("⚠️ Make sure you're using 'self' correctly in your method.");
+        }
+      }
+    }
+    
+    if (insights.length === 0) {
+      insights.push("👀 Keep writing code to get more insights...");
+    }
+    
+    setAiInsights(insights);
+  };
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleRun = () => {
     setShowResults(true);
+    setIsBottomPanelCollapsed(false); // Expand panel when running
     toast.success("Code executed successfully!");
   };
 
@@ -119,7 +205,7 @@ public:
   return (
     <div className="min-h-screen flex flex-col">
       {/* Minimal Header */}
-      <header className="sticky top-0 z-50 h-[60px] bg-[#1a1a1a] border-b border-border/50 flex items-center justify-between px-6">
+      <header className="sticky top-0 z-50 h-[60px] bg-[#1a1a1a] border-b border-border/50 flex items-center justify-between px-4">
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -156,7 +242,7 @@ public:
           <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
             <div className="h-full flex flex-col">
               {/* Fixed Tabs */}
-              <div className="border-b border-border/50 p-4">
+              <div className="border-b border-border/50 px-4 py-2">
                 <Tabs defaultValue="description" className="w-full">
                   <TabsList className="w-full justify-start bg-muted/50">
                     <TabsTrigger value="description">Description</TabsTrigger>
@@ -166,8 +252,8 @@ public:
 
               {/* Scrollable Content */}
               <TabsContent value="description" className="mt-0">
-                <div className="custom-scrollbar" style={{ height: "calc(100vh - 160px)", overflowY: "auto" }}>
-                  <div className="p-6 space-y-6">
+                <div className="custom-scrollbar" style={{ height: "calc(100vh - 122px)", overflowY: "auto" }}>
+                  <div className="p-4 space-y-6">
                 <div>
                   <h1 className="text-3xl font-bold mb-4">2. Add Two Numbers</h1>
                   <div className="flex flex-wrap gap-2 mb-4">
@@ -258,7 +344,7 @@ public:
               </TabsContent>
 
               <TabsContent value="solutions" className="mt-0">
-                <div className="custom-scrollbar p-6" style={{ height: "calc(100vh - 160px)", overflowY: "auto" }}>
+                <div className="custom-scrollbar p-4" style={{ height: "calc(100vh - 122px)", overflowY: "auto" }}>
                   <p className="text-muted-foreground">
                     Solutions will be available after you solve the problem.
                   </p>
@@ -266,7 +352,7 @@ public:
               </TabsContent>
 
               <TabsContent value="submissions" className="mt-0">
-                <div className="custom-scrollbar p-6" style={{ height: "calc(100vh - 160px)", overflowY: "auto" }}>
+                <div className="custom-scrollbar p-4" style={{ height: "calc(100vh - 122px)", overflowY: "auto" }}>
                   <p className="text-muted-foreground">No submissions yet.</p>
                 </div>
               </TabsContent>
@@ -286,7 +372,7 @@ public:
             <ResizablePanel defaultSize={60} minSize={30}>
               <div className="flex flex-col h-full">
                 {/* Top Bar */}
-                <div className="border-b border-border/50 p-4 flex items-center justify-between bg-card/30">
+                <div className="border-b border-border/50 px-4 py-2 flex items-center justify-between bg-card/30">
                   <div className="flex items-center gap-4">
                     <Select value={language} onValueChange={handleLanguageChange}>
                       <SelectTrigger className="w-[150px] bg-background/50">
@@ -321,7 +407,7 @@ public:
                 <div className="flex-1 overflow-hidden">
                   <MonacoEditor
                     value={code}
-                    onChange={setCode}
+                    onChange={handleCodeChange}
                     language={language}
                     theme="codementor-dark"
                   />
@@ -329,54 +415,120 @@ public:
               </div>
             </ResizablePanel>
 
-            {/* Resize Handle */}
-            <ResizableHandle withHandle className="hover:bg-primary/20 transition-colors" />
+            {/* Resize Handle - Hide when collapsed */}
+            {!isBottomPanelCollapsed && (
+              <ResizableHandle withHandle className="hover:bg-primary/20 transition-colors" />
+            )}
 
-            {/* Test Cases Panel */}
-            <ResizablePanel defaultSize={40} minSize={20}>
-              <div className="flex flex-col h-full bg-card/30">
-                <Tabs defaultValue={showResults ? "result" : "testcase"} className="flex flex-col h-full">
-                  <div className="flex items-center justify-between px-4 border-b border-border/50 shrink-0">
-                    <TabsList className="bg-transparent">
-                      <TabsTrigger value="testcase">Testcase</TabsTrigger>
-                      <TabsTrigger value="result">Test Result</TabsTrigger>
-                    </TabsList>
-                  </div>
+            {/* Test Cases Panel - Collapsible */}
+            {isBottomPanelCollapsed ? (
+              // Collapsed state - Only show Run button
+              <div className="h-12 bg-card/30 border-t border-border/50 flex items-center justify-between px-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Test Panel Collapsed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleRun}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Run
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsBottomPanelCollapsed(false)}
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <ResizablePanel defaultSize={40} minSize={20}>
+                <div className="flex flex-col h-full bg-card/30">
+                  <Tabs defaultValue={showResults ? "result" : "testcase"} className="flex flex-col h-full">
+                    <div className="flex items-center justify-between px-4 py-2 shrink-0">
+                      <TabsList className="bg-transparent">
+                        <TabsTrigger value="testcase">Testcase</TabsTrigger>
+                        <TabsTrigger value="result">Test Result</TabsTrigger>
+                        <TabsTrigger value="insights">
+                          <Lightbulb className="h-4 w-4 mr-1" />
+                          AI Insights
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      {/* Run and Submit buttons with collapse button */}
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handleRun}>
+                          <Play className="h-4 w-4 mr-2" />
+                          Run
+                        </Button>
+                        <Button variant="success" size="sm" onClick={handleSubmit}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Submit
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setIsBottomPanelCollapsed(true)}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
 
-                  <TabsContent value="testcase" className="flex-1 p-4 custom-scrollbar overflow-y-auto m-0">
+                  <TabsContent value="testcase" className="flex-1 p-3 custom-scrollbar overflow-y-auto m-0">
                     <div className="space-y-4">
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="bg-primary/10">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className={selectedTestCase === 1 ? "bg-primary/10 border-primary/30" : ""}
+                          onClick={() => setSelectedTestCase(selectedTestCase === 1 ? null : 1)}
+                        >
                           Case 1
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className={selectedTestCase === 2 ? "bg-primary/10 border-primary/30" : ""}
+                          onClick={() => setSelectedTestCase(selectedTestCase === 2 ? null : 2)}
+                        >
                           Case 2
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className={selectedTestCase === 3 ? "bg-primary/10 border-primary/30" : ""}
+                          onClick={() => setSelectedTestCase(selectedTestCase === 3 ? null : 3)}
+                        >
                           Case 3
                         </Button>
-                        <Button variant="outline" size="sm">
-                          + Add Testcase
-                        </Button>
                       </div>
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">l1 =</p>
-                          <code className="block p-2 rounded bg-muted/50 text-sm">
-                            [2,4,3]
-                          </code>
+                      
+                      {/* Show test case details only when selected */}
+                      {selectedTestCase === null ? (
+                        <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                          Click on a test case to view details
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">l2 =</p>
-                          <code className="block p-2 rounded bg-muted/50 text-sm">
-                            [5,6,4]
-                          </code>
+                      ) : (
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">l1 =</p>
+                            <code className="block p-2 rounded bg-muted/50 text-sm">
+                              {selectedTestCase === 1 ? "[2,4,3]" : selectedTestCase === 2 ? "[0]" : "[9,9,9,9,9,9,9]"}
+                            </code>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">l2 =</p>
+                            <code className="block p-2 rounded bg-muted/50 text-sm">
+                              {selectedTestCase === 1 ? "[5,6,4]" : selectedTestCase === 2 ? "[0]" : "[9,9,9,9]"}
+                            </code>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="result" className="flex-1 p-4 custom-scrollbar overflow-y-auto m-0">
+                  <TabsContent value="result" className="flex-1 p-3 custom-scrollbar overflow-y-auto m-0">
                     {showResults ? (
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 text-primary">
@@ -414,28 +566,43 @@ public:
                       </p>
                     )}
                   </TabsContent>
-                </Tabs>
 
-                {/* Action Bar */}
-                <div className="border-t border-border/50 p-4 flex items-center justify-between bg-card/30 shrink-0">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>Ln 1, Col 1</span>
-                    <span>•</span>
-                    <span className="text-primary">Saved</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={handleRun}>
-                      <Play className="h-4 w-4 mr-2" />
-                      Run Code
-                    </Button>
-                    <Button variant="success" onClick={handleSubmit}>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Submit
-                    </Button>
-                  </div>
-                </div>
+                  {/* AI Insights Tab */}
+                  <TabsContent value="insights" className="flex-1 p-3 custom-scrollbar overflow-y-auto m-0">
+                    <div className="space-y-4">
+                      {isAnalyzing ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <Sparkles className="h-4 w-4 animate-pulse text-primary" />
+                          <span>Analyzing your code...</span>
+                        </div>
+                      ) : aiInsights.length > 0 ? (
+                        <div className="space-y-3">
+                          {aiInsights.map((insight, index) => (
+                            <div 
+                              key={index}
+                              className="p-3 rounded-lg bg-primary/5 border border-primary/10 text-sm"
+                            >
+                              {insight}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-32 text-center">
+                          <Lightbulb className="h-8 w-8 text-muted-foreground mb-2" />
+                          <p className="text-muted-foreground text-sm">
+                            Start writing code to get AI insights
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Insights will appear 2 seconds after you stop typing
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             </ResizablePanel>
+            )}
           </ResizablePanelGroup>
         </div>
       </ResizablePanel>

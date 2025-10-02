@@ -159,91 +159,227 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Progress Chart */}
+        {/* Main Content Grid - Recommended Questions (Left) and Progress + Daily (Right) */}
+        <div className="grid lg:grid-cols-[1fr_400px] gap-6">
+          {/* Left: Recommended For You */}
           <Card className="glass-effect">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
-                Your Progress
+                Recommended For You 🎯
               </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={progressData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value, total }) => `${name}: ${value}/${total}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {progressData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="mt-4 space-y-2">
-                {progressData.map((item) => (
-                  <div key={item.name} className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">{item.name}</span>
-                    <span className="font-medium">
-                      {item.value}/{item.total} ({Math.round((item.value / item.total) * 100)}%)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Start */}
-          <Card className="glass-effect">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                Quick Start
-              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Based on your solving patterns</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-6 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold">Problem of the Day</h3>
-                  <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-                    Medium
-                  </Badge>
-                </div>
-                <p className="text-muted-foreground mb-4">Longest Palindromic Substring</p>
-                <Button variant="hero" className="w-full">
-                  Start Solving
-                </Button>
-              </div>
+              {[
+                {
+                  id: "15",
+                  title: "3Sum",
+                  difficulty: "Medium",
+                  reason: "You solved 5 Array problems - try this Medium array challenge",
+                  match: 92,
+                  tags: ["Array", "Two Pointers", "Sorting"],
+                  acceptance: 32.8,
+                  frequency: "High",
+                },
+                {
+                  id: "322",
+                  title: "Coin Change",
+                  difficulty: "Medium",
+                  reason: "Strengthen your Dynamic Programming skills",
+                  match: 85,
+                  tags: ["Dynamic Programming", "BFS"],
+                  acceptance: 43.2,
+                  frequency: "Very High",
+                },
+                {
+                  id: "102",
+                  title: "Binary Tree Level Order",
+                  difficulty: "Medium",
+                  reason: "Next step after solving Binary Tree Traversal",
+                  match: 88,
+                  tags: ["Tree", "BFS", "Binary Tree"],
+                  acceptance: 65.1,
+                  frequency: "High",
+                },
+                {
+                  id: "146",
+                  title: "LRU Cache",
+                  difficulty: "Medium",
+                  reason: "Popular problem you haven't attempted yet",
+                  match: 78,
+                  tags: ["Hash Table", "Linked List", "Design"],
+                  acceptance: 42.3,
+                  frequency: "Very High",
+                },
+              ].map((problem, index) => (
+                <Link
+                  key={problem.id}
+                  to={`/problem/${problem.id}`}
+                  className="block group"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="p-4 rounded-lg bg-card/30 hover:bg-card/60 border border-border/40 hover:border-primary/40 transition-all duration-300">
+                    {/* Top Row: Title and Stats */}
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* Problem Number */}
+                        <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                          #{problem.id}
+                        </span>
+                        
+                        {/* Title */}
+                        <h3 className="font-semibold text-base group-hover:text-primary transition-colors truncate">
+                          {problem.title}
+                        </h3>
+                        
+                        {/* Difficulty Badge */}
+                        <Badge 
+                          className={`${getDifficultyColor(problem.difficulty)} text-xs whitespace-nowrap`}
+                        >
+                          {problem.difficulty}
+                        </Badge>
+                      </div>
 
-              <Button variant="outline" className="w-full" size="lg">
-                <Trophy className="mr-2 h-5 w-5" />
-                Random Problem
-              </Button>
+                      {/* Match Score */}
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
+                          <Sparkles className="h-3 w-3 text-primary" />
+                          <span className="text-xs font-medium text-primary">{problem.match}%</span>
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2">
-                <Button variant="ghost" className="flex-col h-auto py-4">
-                  <span className="text-2xl font-bold text-green-500">20</span>
-                  <span className="text-xs text-muted-foreground">Easy</span>
-                </Button>
-                <Button variant="ghost" className="flex-col h-auto py-4">
-                  <span className="text-2xl font-bold text-yellow-500">18</span>
-                  <span className="text-xs text-muted-foreground">Medium</span>
-                </Button>
-                <Button variant="ghost" className="flex-col h-auto py-4">
-                  <span className="text-2xl font-bold text-red-500">9</span>
-                  <span className="text-xs text-muted-foreground">Hard</span>
-                </Button>
-              </div>
+                    {/* Reason */}
+                    <p className="text-sm text-muted-foreground mb-3 pl-8">
+                      {problem.reason}
+                    </p>
+
+                    {/* Tags Row */}
+                    <div className="flex items-center gap-2 flex-wrap pl-8">
+                      {/* Topic Tags */}
+                      {problem.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/5 text-primary/90 border border-primary/10 hover:bg-primary/10 hover:border-primary/20 transition-colors cursor-pointer"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      
+                      {/* Divider */}
+                      <span className="text-muted-foreground/30">•</span>
+                      
+                      {/* Frequency Tag */}
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-card text-muted-foreground border border-border/50">
+                        {problem.frequency}
+                      </span>
+                      
+                      {/* Acceptance Tag */}
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-card text-muted-foreground border border-border/50">
+                        {problem.acceptance}% accepted
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </CardContent>
           </Card>
+
+          {/* Right: Progress Chart + Daily Question */}
+          <div className="space-y-6">
+            {/* Progress Chart - Compact */}
+            <Card className="glass-effect overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Target className="h-4 w-4 text-primary" />
+                  Your Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <div className="animate-spin-in">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={progressData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value }) => `${name}: ${value}`}
+                        outerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                        animationBegin={0}
+                        animationDuration={1000}
+                      >
+                        {progressData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-3 space-y-1.5">
+                  {progressData.map((item, index) => (
+                    <div 
+                      key={item.name} 
+                      className="flex justify-between items-center text-xs animate-slide-up"
+                      style={{ animationDelay: `${800 + index * 100}ms`, opacity: 0, animationFillMode: 'forwards' }}
+                    >
+                      <span className="text-muted-foreground">{item.name}</span>
+                      <span className="font-medium">
+                        {item.value}/{item.total} ({Math.round((item.value / item.total) * 100)}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Daily Question - Compact */}
+            <Card className="glass-effect">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Zap className="h-4 w-4 text-primary" />
+                  Daily Challenge
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="p-4 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 group">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-bold group-hover:text-primary transition-colors">Problem of the Day</h3>
+                    <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">
+                      Medium
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3 group-hover:text-foreground transition-colors">Longest Palindromic Substring</p>
+                  <Button variant="hero" className="w-full group-hover:scale-[1.02] transition-transform" size="sm">
+                    Start Solving
+                  </Button>
+                </div>
+
+                <Button variant="outline" className="w-full hover:border-primary/40 hover:bg-primary/5 transition-all duration-300" size="sm">
+                  <Trophy className="mr-2 h-4 w-4" />
+                  Random Problem
+                </Button>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <Button variant="ghost" className="flex-col h-auto py-3 hover:bg-green-500/10 hover:border-green-500/30 border border-transparent transition-all duration-300 group">
+                    <span className="text-xl font-bold text-green-500 group-hover:scale-110 transition-transform">20</span>
+                    <span className="text-xs text-muted-foreground">Easy</span>
+                  </Button>
+                  <Button variant="ghost" className="flex-col h-auto py-3 hover:bg-yellow-500/10 hover:border-yellow-500/30 border border-transparent transition-all duration-300 group">
+                    <span className="text-xl font-bold text-yellow-500 group-hover:scale-110 transition-transform">18</span>
+                    <span className="text-xs text-muted-foreground">Medium</span>
+                  </Button>
+                  <Button variant="ghost" className="flex-col h-auto py-3 hover:bg-red-500/10 hover:border-red-500/30 border border-transparent transition-all duration-300 group">
+                    <span className="text-xl font-bold text-red-500 group-hover:scale-110 transition-transform">9</span>
+                    <span className="text-xs text-muted-foreground">Hard</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Recent Activity */}
@@ -282,131 +418,6 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Recommended For You */}
-        <Card className="glass-effect">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              Recommended For You 🎯
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">Based on your solving patterns</p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {[
-              {
-                id: "15",
-                title: "3Sum",
-                difficulty: "Medium",
-                reason: "You solved 5 Array problems - try this Medium array challenge",
-                match: 92,
-                tags: ["Array", "Two Pointers", "Sorting"],
-                acceptance: 32.8,
-                frequency: "High",
-              },
-              {
-                id: "322",
-                title: "Coin Change",
-                difficulty: "Medium",
-                reason: "Strengthen your Dynamic Programming skills",
-                match: 85,
-                tags: ["Dynamic Programming", "BFS"],
-                acceptance: 43.2,
-                frequency: "Very High",
-              },
-              {
-                id: "102",
-                title: "Binary Tree Level Order",
-                difficulty: "Medium",
-                reason: "Next step after solving Binary Tree Traversal",
-                match: 88,
-                tags: ["Tree", "BFS", "Binary Tree"],
-                acceptance: 65.1,
-                frequency: "High",
-              },
-              {
-                id: "146",
-                title: "LRU Cache",
-                difficulty: "Medium",
-                reason: "Popular problem you haven't attempted yet",
-                match: 78,
-                tags: ["Hash Table", "Linked List", "Design"],
-                acceptance: 42.3,
-                frequency: "Very High",
-              },
-            ].map((problem, index) => (
-              <Link
-                key={problem.id}
-                to={`/problem/${problem.id}`}
-                className="block group"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="p-4 rounded-lg bg-card/30 hover:bg-card/60 border border-border/40 hover:border-primary/40 transition-all duration-300">
-                  {/* Top Row: Title and Stats */}
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {/* Problem Number */}
-                      <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                        #{problem.id}
-                      </span>
-                      
-                      {/* Title */}
-                      <h3 className="font-semibold text-base group-hover:text-primary transition-colors truncate">
-                        {problem.title}
-                      </h3>
-                      
-                      {/* Difficulty Badge */}
-                      <Badge 
-                        className={`${getDifficultyColor(problem.difficulty)} text-xs whitespace-nowrap`}
-                      >
-                        {problem.difficulty}
-                      </Badge>
-                    </div>
-
-                    {/* Match Score */}
-                    <div className="flex items-center gap-2 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
-                        <Sparkles className="h-3 w-3 text-primary" />
-                        <span className="text-xs font-medium text-primary">{problem.match}%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reason */}
-                  <p className="text-sm text-muted-foreground mb-3 pl-8">
-                    {problem.reason}
-                  </p>
-
-                  {/* Tags Row */}
-                  <div className="flex items-center gap-2 flex-wrap pl-8">
-                    {/* Topic Tags */}
-                    {problem.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/5 text-primary/90 border border-primary/10 hover:bg-primary/10 hover:border-primary/20 transition-colors cursor-pointer"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    
-                    {/* Divider */}
-                    <span className="text-muted-foreground/30">•</span>
-                    
-                    {/* Frequency Tag */}
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-card text-muted-foreground border border-border/50">
-                      {problem.frequency}
-                    </span>
-                    
-                    {/* Acceptance Tag */}
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-card text-muted-foreground border border-border/50">
-                      {problem.acceptance}% accepted
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
           </CardContent>
         </Card>
 
