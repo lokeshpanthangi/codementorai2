@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SpotlightBackground } from "@/components/ui/spotlight-background";
+import { HeroSection } from "@/components/ui/hero-section";
+import { Icons } from "@/components/ui/icons";
+import { useEffect, useRef } from "react";
 import { 
   Lightbulb, 
   TrendingUp, 
@@ -19,101 +23,66 @@ import {
 } from "lucide-react";
 
 const Landing = () => {
+  const featuresRef = useRef<HTMLElement>(null);
+  const statsRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: "0px 0px -100px 0px",
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("animate-in");
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    if (featuresRef.current) observer.observe(featuresRef.current);
+    if (statsRef.current) observer.observe(statsRef.current);
+    if (ctaRef.current) observer.observe(ctaRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      <Navbar />
+    <SpotlightBackground glowColor="purple" intensity={0.2}>
+      <div className="min-h-screen flex flex-col bg-black">
+        <Navbar />
 
-      {/* Hero Section - Enhanced with better shadows and dark violet */}
-      <section className="relative container mx-auto px-4 py-16 lg:py-20 bg-black">
-        {/* Background gradient effect */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-700/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-700/5 rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left Content */}
-          <div className="space-y-8 animate-fade-in">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-              Master Coding with Smart AI Guidance
-            </h1>
-            
-            <p className="text-xl text-white/80 leading-relaxed max-w-xl">
-              Transform your DSA skills with intelligent, contextual hints. Get the perfect amount of help—never too much, never too little.
-            </p>
-            
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Link to="/auth">
-                <Button 
-                  size="lg" 
-                  className="text-lg px-8 py-6 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white shadow-xl shadow-violet-900/30 hover:shadow-2xl hover:shadow-violet-900/50 transition-all duration-300"
-                >
-                  <Code2 className="mr-2 h-5 w-5" />
-                  Start Learning Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/problems">
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="text-lg px-8 py-6 border-2 border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-500/50 shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  Explore Problems
-                </Button>
-              </Link>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex items-center gap-6 pt-6 flex-wrap">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-violet-400" />
-                <span className="text-sm text-white/70">500+ Problems</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-violet-400" />
-                <span className="text-sm text-white/70">10K+ Active Users</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-violet-400" />
-                <span className="text-sm text-white/70">AI-Powered</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Image */}
-          <div className="relative animate-fade-in lg:animate-slide-in-right">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-violet-600/20 blur-3xl rounded-full transform scale-110"></div>
-            
-            {/* Main image container */}
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-violet-500 to-violet-700 rounded-2xl blur opacity-30"></div>
-              <img
-                src="/landing_page.png"
-                alt="AI Coding Platform"
-                className="relative rounded-2xl border border-violet-500/20 shadow-2xl shadow-black/50"
-              />
-            </div>
-            
-            {/* Floating badge */}
-            <div className="absolute -bottom-6 -left-6 bg-card border border-violet-500/20 rounded-xl p-4 shadow-2xl shadow-black/30 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center shadow-lg">
-                  <Brain className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-white">Smart AI Hints</div>
-                  <div className="text-xs text-white/60">Context-aware guidance</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Section */}
+      <HeroSection
+        badge={{
+          text: "Introducing our new AI-powered platform",
+          action: {
+            text: "Learn more",
+            href: "#features",
+          },
+        }}
+        title="Master Coding with Smart AI Guidance"
+        description="Transform your DSA skills with intelligent, contextual hints. Get the perfect amount of help—never too much, never too little."
+        actions={[
+          {
+            text: "Get Started",
+            href: "/auth",
+            variant: "hero",
+          },
+          {
+            text: "Explore Problems",
+            href: "/problems",
+            variant: "default",
+          },
+        ]}
+        image="/landing_page.png"
+      />
 
       {/* Features Section - Enhanced cards with better shadows */}
-      <section id="features" className="py-24 bg-black">
+      <section ref={featuresRef} id="features" className="py-24 bg-black opacity-0 translate-y-20 transition-all duration-1000 ease-out">
         <div className="container mx-auto px-4">
           <div className="text-center mb-20 space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-sm shadow-lg shadow-violet-900/5">
@@ -244,7 +213,7 @@ const Landing = () => {
       </section>
 
       {/* Stats Section - Enhanced with better visual hierarchy */}
-      <section className="py-24 relative overflow-hidden bg-black">
+      <section ref={statsRef} className="py-24 relative overflow-hidden bg-black opacity-0 translate-y-20 transition-all duration-1000 ease-out">
         <div className="container mx-auto px-4 relative">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
             {/* Stat 1 */}
@@ -315,7 +284,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden bg-black">
+      <section ref={ctaRef} className="py-24 relative overflow-hidden bg-black opacity-0 translate-y-20 transition-all duration-1000 ease-out">
         <div className="container mx-auto px-4 relative">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold">
@@ -345,7 +314,8 @@ const Landing = () => {
       </section>
 
       <Footer />
-    </div>
+      </div>
+    </SpotlightBackground>
   );
 };
 
