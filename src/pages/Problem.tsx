@@ -18,8 +18,6 @@ import {
   Maximize2,
   Undo2,
   Sparkles,
-  ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,22 +35,75 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import MonacoEditor from "@/components/MonacoEditor";
 
 const Problem = () => {
   const { id } = useParams();
   const [showResults, setShowResults] = useState(false);
-  const [hintsExpanded, setHintsExpanded] = useState(true);
-  const [currentHint, setCurrentHint] = useState(0);
+  const [language, setLanguage] = useState("python");
   const [code, setCode] = useState(`class Solution:
     def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:
         # Write your solution here
         pass`);
 
-  const hints = [
-    "Think about how you would add two numbers on paper. What do you do when the sum is greater than 9?",
-    "Consider using a dummy head node to simplify edge cases when creating the result linked list.",
-    "Don't forget to handle the carry at the end if it's not zero.",
-  ];
+  // Language templates for different languages
+  const languageTemplates: Record<string, string> = {
+    python: `class Solution:
+    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:
+        # Write your solution here
+        pass`,
+    javascript: `/**
+ * Definition for singly-linked list.
+ * function ListNode(val, next) {
+ *     this.val = (val===undefined ? 0 : val)
+ *     this.next = (next===undefined ? null : next)
+ * }
+ */
+/**
+ * @param {ListNode} l1
+ * @param {ListNode} l2
+ * @return {ListNode}
+ */
+var addTwoNumbers = function(l1, l2) {
+    // Write your solution here
+};`,
+    java: `/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode() {}
+ *     ListNode(int val) { this.val = val; }
+ *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }
+ * }
+ */
+class Solution {
+    public ListNode addTwoNumbers(ListNode l1, ListNode l2) {
+        // Write your solution here
+    }
+}`,
+    cpp: `/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+        // Write your solution here
+    }
+};`,
+  };
+
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    setCode(languageTemplates[newLanguage] || "");
+  };
 
   const handleRun = () => {
     setShowResults(true);
@@ -63,12 +114,6 @@ const Problem = () => {
     toast.success("Solution accepted! 🎉", {
       description: "Runtime: 48ms (Beats 95.4%)",
     });
-  };
-
-  const getNextHint = () => {
-    if (currentHint < hints.length - 1) {
-      setCurrentHint(currentHint + 1);
-    }
   };
 
   return (
@@ -104,17 +149,20 @@ const Problem = () => {
         </Link>
       </header>
 
-      <div className="flex-1 flex overflow-hidden" style={{ height: "calc(100vh - 60px)" }}>
-        {/* Left Panel - Problem Description */}
-        <div className="w-full lg:w-[40%] border-r border-border/50 flex flex-col">
-          {/* Fixed Tabs */}
-          <div className="border-b border-border/50 p-4">
-            <Tabs defaultValue="description" className="w-full">
-              <TabsList className="w-full justify-start bg-muted/50">
-                <TabsTrigger value="description">Description</TabsTrigger>
-                <TabsTrigger value="solutions">Solutions</TabsTrigger>
-                <TabsTrigger value="submissions">Submissions</TabsTrigger>
-              </TabsList>
+      <div className="flex-1 overflow-hidden" style={{ height: "calc(100vh - 60px)" }}>
+        {/* Horizontal Resizable Panels */}
+        <ResizablePanelGroup direction="horizontal">
+          {/* Left Panel - Problem Description */}
+          <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
+            <div className="h-full flex flex-col">
+              {/* Fixed Tabs */}
+              <div className="border-b border-border/50 p-4">
+                <Tabs defaultValue="description" className="w-full">
+                  <TabsList className="w-full justify-start bg-muted/50">
+                    <TabsTrigger value="description">Description</TabsTrigger>
+                    <TabsTrigger value="solutions">Solutions</TabsTrigger>
+                    <TabsTrigger value="submissions">Submissions</TabsTrigger>
+                  </TabsList>
 
               {/* Scrollable Content */}
               <TabsContent value="description" className="mt-0">
@@ -225,9 +273,14 @@ const Problem = () => {
             </Tabs>
           </div>
         </div>
+      </ResizablePanel>
 
-        {/* Right Panel - Code Editor & Tests */}
-        <div className="w-full lg:w-[60%] flex flex-col">
+      {/* Horizontal Resize Handle */}
+      <ResizableHandle withHandle className="hover:bg-primary/20 transition-colors" />
+
+      {/* Right Panel - Code Editor & Tests */}
+      <ResizablePanel defaultSize={60} minSize={40}>
+        <div className="h-full flex flex-col">
           <ResizablePanelGroup direction="vertical">
             {/* Code Editor Panel */}
             <ResizablePanel defaultSize={60} minSize={30}>
@@ -235,19 +288,19 @@ const Problem = () => {
                 {/* Top Bar */}
                 <div className="border-b border-border/50 p-4 flex items-center justify-between bg-card/30">
                   <div className="flex items-center gap-4">
-                    <Select defaultValue="python3">
+                    <Select value={language} onValueChange={handleLanguageChange}>
                       <SelectTrigger className="w-[150px] bg-background/50">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border z-50">
-                        <SelectItem value="python3">Python3</SelectItem>
+                        <SelectItem value="python">Python3</SelectItem>
                         <SelectItem value="javascript">JavaScript</SelectItem>
                         <SelectItem value="java">Java</SelectItem>
                         <SelectItem value="cpp">C++</SelectItem>
                       </SelectContent>
                     </Select>
                     <Badge variant="secondary" className="text-xs">
-                      Auto
+                      Auto-save
                     </Badge>
                   </div>
 
@@ -258,29 +311,20 @@ const Problem = () => {
                     <Button variant="ghost" size="sm">
                       <Maximize2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => setCode(languageTemplates[language])}>
                       <Undo2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
 
-                {/* Code Editor - No scroll, Monaco handles internally */}
-                <div className="flex-1 bg-[#1e1e1e] p-4 overflow-hidden">
-                  <div className="font-mono text-sm h-full">
-                    <div className="flex h-full">
-                      <div className="select-none text-muted-foreground pr-4 text-right w-12">
-                        {code.split("\n").map((_, i) => (
-                          <div key={i}>{i + 1}</div>
-                        ))}
-                      </div>
-                      <textarea
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        className="flex-1 bg-transparent text-foreground outline-none resize-none font-mono"
-                        spellCheck={false}
-                      />
-                    </div>
-                  </div>
+                {/* Monaco Editor */}
+                <div className="flex-1 overflow-hidden">
+                  <MonacoEditor
+                    value={code}
+                    onChange={setCode}
+                    language={language}
+                    theme="codementor-dark"
+                  />
                 </div>
               </div>
             </ResizablePanel>
@@ -394,66 +438,8 @@ const Problem = () => {
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
-      </div>
-
-      {/* AI Hints Panel - Floating */}
-      <div className="fixed bottom-6 right-6 w-80 z-50">
-        <Card className="glass-effect shadow-2xl border-primary/20">
-          <CardHeader
-            className="cursor-pointer hover:bg-card/50 transition-colors"
-            onClick={() => setHintsExpanded(!hintsExpanded)}
-          >
-            <CardTitle className="flex items-center justify-between text-lg">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-                <span>AI Hints 🤖</span>
-              </div>
-              {hintsExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </CardTitle>
-          </CardHeader>
-          {hintsExpanded && (
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Hint {currentHint + 1} of {hints.length}
-                </span>
-                <span className="text-primary font-medium">
-                  {3 - currentHint} hints remaining
-                </span>
-              </div>
-
-              {currentHint >= 0 && (
-                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                  <p className="text-sm leading-relaxed">{hints[currentHint]}</p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {currentHint < hints.length - 1 && (
-                  <Button
-                    variant="hero"
-                    className="w-full"
-                    onClick={getNextHint}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Show Next Hint
-                  </Button>
-                )}
-                <Button variant="outline" className="w-full">
-                  Explain Error
-                </Button>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                2 hints used today (8 remaining)
-              </p>
-            </CardContent>
-          )}
-        </Card>
+      </ResizablePanel>
+    </ResizablePanelGroup>
       </div>
     </div>
   );
