@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Navbar from "@/components/Navbar";
 import {
   ArrowLeft,
   Play,
@@ -25,6 +24,19 @@ import {
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 const Problem = () => {
   const { id } = useParams();
@@ -61,21 +73,42 @@ const Problem = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar isAuthenticated username="CodeMaster" />
+      {/* Minimal Header */}
+      <header className="sticky top-0 z-50 h-[60px] bg-[#1a1a1a] border-b border-border/50 flex items-center justify-between px-6">
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <span className="text-xl font-bold">CodeMentor AI</span>
+        </Link>
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/problems">Problems</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Add Two Numbers</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <Link to="/problems">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Problems
+          </Button>
+        </Link>
+      </header>
+
+      <div className="flex-1 flex overflow-hidden" style={{ height: "calc(100vh - 60px)" }}>
         {/* Left Panel - Problem Description */}
-        <div className="w-full lg:w-[40%] border-r border-border/50 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            <div className="flex items-center gap-4">
-              <Link to="/problems">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-              </Link>
-            </div>
-
+        <div className="w-full lg:w-[40%] border-r border-border/50 flex flex-col">
+          {/* Fixed Tabs */}
+          <div className="border-b border-border/50 p-4">
             <Tabs defaultValue="description" className="w-full">
               <TabsList className="w-full justify-start bg-muted/50">
                 <TabsTrigger value="description">Description</TabsTrigger>
@@ -83,7 +116,10 @@ const Problem = () => {
                 <TabsTrigger value="submissions">Submissions</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="description" className="space-y-6 mt-6">
+              {/* Scrollable Content */}
+              <TabsContent value="description" className="mt-0">
+                <div className="custom-scrollbar" style={{ height: "calc(100vh - 160px)", overflowY: "auto" }}>
+                  <div className="p-6 space-y-6">
                 <div>
                   <h1 className="text-3xl font-bold mb-4">2. Add Two Numbers</h1>
                   <div className="flex flex-wrap gap-2 mb-4">
@@ -169,177 +205,194 @@ const Problem = () => {
                     </li>
                   </ul>
                 </div>
+                  </div>
+                </div>
               </TabsContent>
 
-              <TabsContent value="solutions" className="mt-6">
-                <p className="text-muted-foreground">
-                  Solutions will be available after you solve the problem.
-                </p>
+              <TabsContent value="solutions" className="mt-0">
+                <div className="custom-scrollbar p-6" style={{ height: "calc(100vh - 160px)", overflowY: "auto" }}>
+                  <p className="text-muted-foreground">
+                    Solutions will be available after you solve the problem.
+                  </p>
+                </div>
               </TabsContent>
 
-              <TabsContent value="submissions" className="mt-6">
-                <p className="text-muted-foreground">No submissions yet.</p>
+              <TabsContent value="submissions" className="mt-0">
+                <div className="custom-scrollbar p-6" style={{ height: "calc(100vh - 160px)", overflowY: "auto" }}>
+                  <p className="text-muted-foreground">No submissions yet.</p>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
         </div>
 
-        {/* Right Panel - Code Editor */}
+        {/* Right Panel - Code Editor & Tests */}
         <div className="w-full lg:w-[60%] flex flex-col">
-          {/* Top Bar */}
-          <div className="border-b border-border/50 p-4 flex items-center justify-between bg-card/30">
-            <div className="flex items-center gap-4">
-              <Select defaultValue="python3">
-                <SelectTrigger className="w-[150px] bg-background/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border z-50">
-                  <SelectItem value="python3">Python3</SelectItem>
-                  <SelectItem value="javascript">JavaScript</SelectItem>
-                  <SelectItem value="java">Java</SelectItem>
-                  <SelectItem value="cpp">C++</SelectItem>
-                </SelectContent>
-              </Select>
-              <Badge variant="secondary" className="text-xs">
-                Auto
-              </Badge>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Undo2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Code Editor */}
-          <div className="flex-1 overflow-hidden">
-            <div className="h-full bg-[#1e1e1e] p-4 overflow-y-auto">
-              <div className="font-mono text-sm">
-                <div className="flex">
-                  <div className="select-none text-muted-foreground pr-4 text-right w-12">
-                    {code.split("\n").map((_, i) => (
-                      <div key={i}>{i + 1}</div>
-                    ))}
+          <ResizablePanelGroup direction="vertical">
+            {/* Code Editor Panel */}
+            <ResizablePanel defaultSize={60} minSize={30}>
+              <div className="flex flex-col h-full">
+                {/* Top Bar */}
+                <div className="border-b border-border/50 p-4 flex items-center justify-between bg-card/30">
+                  <div className="flex items-center gap-4">
+                    <Select defaultValue="python3">
+                      <SelectTrigger className="w-[150px] bg-background/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border z-50">
+                        <SelectItem value="python3">Python3</SelectItem>
+                        <SelectItem value="javascript">JavaScript</SelectItem>
+                        <SelectItem value="java">Java</SelectItem>
+                        <SelectItem value="cpp">C++</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Badge variant="secondary" className="text-xs">
+                      Auto
+                    </Badge>
                   </div>
-                  <textarea
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    className="flex-1 bg-transparent text-foreground outline-none resize-none font-mono"
-                    style={{ minHeight: "400px" }}
-                    spellCheck={false}
-                  />
+
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Undo2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Code Editor - No scroll, Monaco handles internally */}
+                <div className="flex-1 bg-[#1e1e1e] p-4 overflow-hidden">
+                  <div className="font-mono text-sm h-full">
+                    <div className="flex h-full">
+                      <div className="select-none text-muted-foreground pr-4 text-right w-12">
+                        {code.split("\n").map((_, i) => (
+                          <div key={i}>{i + 1}</div>
+                        ))}
+                      </div>
+                      <textarea
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        className="flex-1 bg-transparent text-foreground outline-none resize-none font-mono"
+                        spellCheck={false}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </ResizablePanel>
 
-          {/* Bottom Section - Test Cases */}
-          <div className="border-t border-border/50 bg-card/30">
-            <Tabs defaultValue={showResults ? "result" : "testcase"} className="w-full">
-              <div className="flex items-center justify-between px-4 border-b border-border/50">
-                <TabsList className="bg-transparent">
-                  <TabsTrigger value="testcase">Testcase</TabsTrigger>
-                  <TabsTrigger value="result">Test Result</TabsTrigger>
-                </TabsList>
+            {/* Resize Handle */}
+            <ResizableHandle withHandle className="hover:bg-primary/20 transition-colors" />
+
+            {/* Test Cases Panel */}
+            <ResizablePanel defaultSize={40} minSize={20}>
+              <div className="flex flex-col h-full bg-card/30">
+                <Tabs defaultValue={showResults ? "result" : "testcase"} className="flex flex-col h-full">
+                  <div className="flex items-center justify-between px-4 border-b border-border/50 shrink-0">
+                    <TabsList className="bg-transparent">
+                      <TabsTrigger value="testcase">Testcase</TabsTrigger>
+                      <TabsTrigger value="result">Test Result</TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="testcase" className="flex-1 p-4 custom-scrollbar overflow-y-auto m-0">
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="bg-primary/10">
+                          Case 1
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          Case 2
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          Case 3
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          + Add Testcase
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">l1 =</p>
+                          <code className="block p-2 rounded bg-muted/50 text-sm">
+                            [2,4,3]
+                          </code>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">l2 =</p>
+                          <code className="block p-2 rounded bg-muted/50 text-sm">
+                            [5,6,4]
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="result" className="flex-1 p-4 custom-scrollbar overflow-y-auto m-0">
+                    {showResults ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-primary">
+                          <CheckCircle2 className="h-5 w-5" />
+                          <span className="font-semibold">All test cases passed!</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground mb-1">Input</p>
+                            <code className="text-xs">[2,4,3], [5,6,4]</code>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Output</p>
+                            <code className="text-xs">[7,0,8]</code>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Expected</p>
+                            <code className="text-xs">[7,0,8]</code>
+                          </div>
+                        </div>
+                        <div className="flex gap-6 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Runtime: </span>
+                            <span className="font-medium">48ms</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Memory: </span>
+                            <span className="font-medium">14.2MB</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        Run your code to see test results
+                      </p>
+                    )}
+                  </TabsContent>
+                </Tabs>
+
+                {/* Action Bar */}
+                <div className="border-t border-border/50 p-4 flex items-center justify-between bg-card/30 shrink-0">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>Ln 1, Col 1</span>
+                    <span>•</span>
+                    <span className="text-primary">Saved</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button variant="outline" onClick={handleRun}>
+                      <Play className="h-4 w-4 mr-2" />
+                      Run Code
+                    </Button>
+                    <Button variant="success" onClick={handleSubmit}>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Submit
+                    </Button>
+                  </div>
+                </div>
               </div>
-
-              <TabsContent value="testcase" className="p-4 space-y-4 max-h-48 overflow-y-auto">
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="bg-primary/10">
-                    Case 1
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Case 2
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Case 3
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    + Add Testcase
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">l1 =</p>
-                    <code className="block p-2 rounded bg-muted/50 text-sm">
-                      [2,4,3]
-                    </code>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">l2 =</p>
-                    <code className="block p-2 rounded bg-muted/50 text-sm">
-                      [5,6,4]
-                    </code>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="result" className="p-4 max-h-48 overflow-y-auto">
-                {showResults ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-primary">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <span className="font-semibold">All test cases passed!</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Input</p>
-                        <code className="text-xs">[2,4,3], [5,6,4]</code>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Output</p>
-                        <code className="text-xs">[7,0,8]</code>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Expected</p>
-                        <code className="text-xs">[7,0,8]</code>
-                      </div>
-                    </div>
-                    <div className="flex gap-6 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Runtime: </span>
-                        <span className="font-medium">48ms</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Memory: </span>
-                        <span className="font-medium">14.2MB</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    Run your code to see test results
-                  </p>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Action Bar */}
-          <div className="border-t border-border/50 p-4 flex items-center justify-between bg-card/30">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Ln 1, Col 1</span>
-              <span>•</span>
-              <span className="text-primary">Saved</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleRun}>
-                <Play className="h-4 w-4 mr-2" />
-                Run Code
-              </Button>
-              <Button variant="success" onClick={handleSubmit}>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Submit
-              </Button>
-            </div>
-          </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </div>
 

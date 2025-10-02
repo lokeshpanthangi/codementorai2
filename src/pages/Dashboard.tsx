@@ -285,6 +285,149 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Recommended For You */}
+        <Card className="glass-effect">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Recommended For You 🎯
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Based on your solving patterns</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  id: "15",
+                  title: "3Sum",
+                  difficulty: "Medium",
+                  reason: "You solved 5 Array problems - try this Medium array challenge",
+                  match: 92,
+                  tags: ["Array", "Two Pointers", "Sorting"],
+                  acceptance: 32.8,
+                  frequency: "High",
+                  basedOn: "similar_solved",
+                },
+                {
+                  id: "322",
+                  title: "Coin Change",
+                  difficulty: "Medium",
+                  reason: "Strengthen your Dynamic Programming skills",
+                  match: 85,
+                  tags: ["Dynamic Programming", "BFS"],
+                  acceptance: 43.2,
+                  frequency: "Very High",
+                  basedOn: "knowledge_gap",
+                },
+                {
+                  id: "102",
+                  title: "Binary Tree Level Order",
+                  difficulty: "Medium",
+                  reason: "Next step after solving Binary Tree Traversal",
+                  match: 88,
+                  tags: ["Tree", "BFS", "Binary Tree"],
+                  acceptance: 65.1,
+                  frequency: "High",
+                  basedOn: "learning_path",
+                },
+                {
+                  id: "146",
+                  title: "LRU Cache",
+                  difficulty: "Medium",
+                  reason: "Popular problem you haven't attempted yet",
+                  match: 78,
+                  tags: ["Hash Table", "Linked List", "Design"],
+                  acceptance: 42.3,
+                  frequency: "Very High",
+                  basedOn: "trending",
+                },
+              ].map((problem) => (
+                <Card
+                  key={problem.id}
+                  className="glass-effect hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group relative overflow-hidden"
+                  style={
+                    problem.match > 80
+                      ? {
+                          borderImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) 1",
+                          borderWidth: "2px",
+                          borderStyle: "solid",
+                        }
+                      : {}
+                  }
+                >
+                  <CardContent className="p-5 space-y-4">
+                    {/* Header with bookmark */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg group-hover:text-primary transition-colors">
+                          {problem.id}. {problem.title}
+                        </h3>
+                        <Badge className={`${getDifficultyColor(problem.difficulty)} text-xs mt-2`}>
+                          {problem.difficulty}
+                        </Badge>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <svg
+                          className="h-5 w-5 text-muted-foreground hover:text-primary"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                          />
+                        </svg>
+                      </Button>
+                    </div>
+
+                    {/* Recommendation reason */}
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                      <p className="text-sm text-muted-foreground">{problem.reason}</p>
+                    </div>
+
+                    {/* Match score badge */}
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-primary/20 text-primary border-primary/30 animate-pulse">
+                        {problem.match}% match
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {problem.frequency} frequency
+                      </Badge>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {problem.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Stats and button */}
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="text-xs text-muted-foreground">
+                        Acceptance: {problem.acceptance}%
+                      </span>
+                      <Link to={`/problem/${problem.id}`}>
+                        <Button
+                          size="sm"
+                          className="gradient-primary text-white hover:opacity-90"
+                        >
+                          Start Solving
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Categories */}
         <div>
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
