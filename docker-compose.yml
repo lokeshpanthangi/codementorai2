@@ -1,0 +1,64 @@
+version: '3.7'
+
+services:
+  judge0-server:
+    image: judge0/judge0:1.13.0
+    volumes:
+      - ./judge0-data:/var/local/judge0
+    ports:
+      - "2358:2358"
+    privileged: true
+    environment:
+      - REDIS_HOST=judge0-redis
+      - POSTGRES_HOST=judge0-db
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=YourSecurePassword
+      - ENABLE_WAIT_RESULT=true
+      - ENABLE_COMPILER_OPTIONS=true
+    restart: unless-stopped
+    depends_on:
+      - judge0-db
+      - judge0-redis
+    shm_size: '256m'
+
+  judge0-workers:
+    image: judge0/judge0:1.13.0
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0-data:/var/local/judge0
+    privileged: true
+    environment:
+      - REDIS_HOST=judge0-redis
+      - POSTGRES_HOST=judge0-db
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=YourSecurePassword
+      - ENABLE_WAIT_RESULT=true
+      - ENABLE_COMPILER_OPTIONS=true
+    restart: unless-stopped
+    depends_on:
+      - judge0-db
+      - judge0-redis
+    shm_size: '256m'
+
+  judge0-db:
+    image: postgres:13.0
+    environment:
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=YourSecurePassword
+    volumes:
+      - judge0-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  judge0-redis:
+    image: redis:6.0
+    command: redis-server --appendonly yes
+    volumes:
+      - judge0-redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  judge0-postgres-data:
+  judge0-redis-data:
