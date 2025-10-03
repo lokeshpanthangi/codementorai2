@@ -13,13 +13,23 @@ import {
   Target,
   Zap,
 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  Legend 
+} from "recharts";
 
 const Dashboard = () => {
   const progressData = [
-    { name: "Easy", value: 20, total: 150, color: "#10b981" },
-    { name: "Medium", value: 18, total: 250, color: "#f59e0b" },
-    { name: "Hard", value: 9, total: 120, color: "#ef4444" },
+    { month: "Jan", easy: 12, medium: 8, hard: 3 },
+    { month: "Feb", easy: 15, medium: 10, hard: 4 },
+    { month: "Mar", easy: 18, medium: 14, hard: 6 },
+    { month: "Apr", easy: 20, medium: 18, hard: 9 },
   ];
 
   const recentActivity = [
@@ -288,51 +298,79 @@ const Dashboard = () => {
 
           {/* Right: Progress Chart + Daily Question */}
           <div className="space-y-6">
-            {/* Progress Chart - Compact */}
+            {/* Progress Chart - Area Chart */}
             <Card className="glass-effect overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Target className="h-4 w-4 text-primary" />
                   Your Progress
                 </CardTitle>
+                <p className="text-xs text-muted-foreground">Problems solved over time</p>
               </CardHeader>
               <CardContent className="pb-4">
-                <div className="animate-spin-in">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={progressData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, value }) => `${name}: ${value}`}
-                        outerRadius={60}
-                        fill="#8884d8"
-                        dataKey="value"
-                        animationBegin={0}
-                        animationDuration={1000}
-                      >
-                        {progressData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-3 space-y-1.5">
-                  {progressData.map((item, index) => (
-                    <div 
-                      key={item.name} 
-                      className="flex justify-between items-center text-xs animate-slide-up"
-                      style={{ animationDelay: `${800 + index * 100}ms`, opacity: 0, animationFillMode: 'forwards' }}
-                    >
-                      <span className="text-muted-foreground">{item.name}</span>
-                      <span className="font-medium">
-                        {item.value}/{item.total} ({Math.round((item.value / item.total) * 100)}%)
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={progressData}>
+                    <defs>
+                      <linearGradient id="colorEasy" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(160 84% 39%)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(160 84% 39%)" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorMedium" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(45 93% 47%)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(45 93% 47%)" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorHard" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(0 84% 60%)" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      fontSize={11} 
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))" 
+                      fontSize={11} 
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '11px' }}
+                      iconType="circle"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="easy"
+                      stroke="hsl(160 84% 39%)"
+                      fillOpacity={1}
+                      fill="url(#colorEasy)"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="medium"
+                      stroke="hsl(45 93% 47%)"
+                      fillOpacity={1}
+                      fill="url(#colorMedium)"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="hard"
+                      stroke="hsl(0 84% 60%)"
+                      fillOpacity={1}
+                      fill="url(#colorHard)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 

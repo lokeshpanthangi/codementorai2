@@ -50,6 +50,40 @@ All colors MUST be HSL.
     --brand: 27 96% 61%;
     --brand-foreground: 31 97% 72%;
   }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    --primary: 270 91% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 270 91% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 270 91% 65%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(270 91% 65%), hsl(270 91% 75%));
+    --shadow-glow: 0 0 40px hsl(270 91% 65% / 0.2);
+  }
+
   .theme {
     --animate-appear-zoom: appear-zoom 0.5s ease-out forwards;
     --animate-appear: appear 0.5s ease-out forwards;
