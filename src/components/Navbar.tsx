@@ -78,21 +78,11 @@ const Navbar = ({ isAuthenticated = false, username = "User" }: NavbarProps) => 
             </div>
 
             {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="relative h-10 w-20 rounded-full bg-muted/80 border border-border/50 p-1 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
-              aria-label="Toggle theme"
-            >
-              <div
-                className={`absolute inset-1 rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-500 ease-in-out ${
-                  theme === 'dark' ? 'translate-x-10' : 'translate-x-0'
-                }`}
-              />
-              <div className="relative flex items-center justify-between px-2 h-full">
-                <Sun className={`h-4 w-4 z-10 transition-colors duration-300 ${theme === 'light' ? 'text-white' : 'text-muted-foreground'}`} />
-                <Moon className={`h-4 w-4 z-10 transition-colors duration-300 ${theme === 'dark' ? 'text-white' : 'text-muted-foreground'}`} />
-              </div>
-            </button>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50">
+              <Sun className="h-4 w-4 text-muted-foreground" />
+              <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -150,21 +140,11 @@ const Navbar = ({ isAuthenticated = false, username = "User" }: NavbarProps) => 
             </div>
 
             {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="relative h-10 w-20 rounded-full bg-muted/80 border border-border/50 p-1 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
-              aria-label="Toggle theme"
-            >
-              <div
-                className={`absolute inset-1 rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-500 ease-in-out ${
-                  theme === 'dark' ? 'translate-x-10' : 'translate-x-0'
-                }`}
-              />
-              <div className="relative flex items-center justify-between px-2 h-full">
-                <Sun className={`h-4 w-4 z-10 transition-colors duration-300 ${theme === 'light' ? 'text-white' : 'text-muted-foreground'}`} />
-                <Moon className={`h-4 w-4 z-10 transition-colors duration-300 ${theme === 'dark' ? 'text-white' : 'text-muted-foreground'}`} />
-              </div>
-            </button>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50">
+              <Sun className="h-4 w-4 text-muted-foreground" />
+              <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            </div>
 
             <Link to="/auth">
               <Button 
