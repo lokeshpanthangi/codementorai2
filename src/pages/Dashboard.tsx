@@ -5,8 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Code2,
   CheckCircle2,
@@ -129,41 +127,30 @@ const Dashboard = () => {
   const categories = ["All", "Array", "String", "Hash Table", "Dynamic Programming", "Math", "Sorting", "Tree", "Graph"];
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen w-full flex">
-        <DashboardSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-50 border-b border-border/50 glass-effect">
-            <div className="flex items-center gap-4 px-4">
-              <SidebarTrigger />
-              <div className="flex-1">
-                <Navbar isAuthenticated username="CodeMaster" />
+    <div className="min-h-screen w-full">
+      <Navbar isAuthenticated username="CodeMaster" />
+
+      <main className="flex-1">
+        {/* Hero Section */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="p-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="space-y-2">
+                <h1 className="text-3xl md:text-4xl font-bold">
+                  Welcome back, <span className="text-primary">CodeMaster</span>!
+                </h1>
+                <p className="text-muted-foreground text-lg">
+                  "The only way to learn a new programming language is by writing programs in it." - Dennis Ritchie
+                </p>
               </div>
+              <Button variant="default" size="lg">
+                Continue Learning
+              </Button>
             </div>
-          </header>
+          </div>
 
-          <main className="flex-1">
-            {/* Hero Card */}
-            <div className="container mx-auto px-4 py-8">
-              <div className="p-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-2">
-                    <h1 className="text-3xl md:text-4xl font-bold text-white">
-                      Welcome back, <span className="text-violet-500">CodeMaster</span>!
-                    </h1>
-                    <p className="text-white/70 text-lg">
-                      "The only way to learn a new programming language is by writing programs in it." - Dennis Ritchie
-                    </p>
-                  </div>
-                  <Button variant="default" size="lg">
-                    Continue Learning
-                  </Button>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <Card className="glass-effect hover:shadow-lg transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -219,12 +206,105 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              </div>
+            </Card>
+          </div>
 
-              {/* Filters Section */}
-              <Card className="glass-effect mb-6">
-                <CardContent className="p-6">
+          {/* Featured Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Recommended Problems */}
+            <Card className="glass-effect lg:col-span-1">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Recommended for You
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                    <p className="font-medium text-sm">Two Sum</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">Easy</Badge>
+                      <span className="text-xs text-muted-foreground">Array</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                    <p className="font-medium text-sm">Valid Parentheses</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">Easy</Badge>
+                      <span className="text-xs text-muted-foreground">Stack</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                    <p className="font-medium text-sm">Merge Two Sorted Lists</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">Easy</Badge>
+                      <span className="text-xs text-muted-foreground">Linked List</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Analytics */}
+            <Card className="glass-effect">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-4">Weekly Progress</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Easy</span>
+                      <span className="text-sm font-medium">12/20</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500" style={{ width: '60%' }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Medium</span>
+                      <span className="text-sm font-medium">8/15</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-yellow-500" style={{ width: '53%' }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Hard</span>
+                      <span className="text-sm font-medium">3/10</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-red-500" style={{ width: '30%' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Daily Challenge */}
+            <Card className="glass-effect bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                  <Flame className="h-5 w-5 text-orange-500" />
+                  Daily Challenge
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">Complete today's challenge to maintain your streak!</p>
+                <div className="p-4 rounded-lg bg-background/50 mb-4">
+                  <p className="font-medium mb-2">Longest Substring Without Repeating Characters</p>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
+                    <span className="text-xs text-muted-foreground">String</span>
+                  </div>
+                </div>
+                <Button variant="default" className="w-full">
+                  Start Challenge
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters Section */}
+          <Card className="glass-effect mb-6">
+            <CardContent className="p-6">
                   <div className="space-y-4">
                     {/* Search */}
                     <div className="relative">
@@ -270,20 +350,20 @@ const Dashboard = () => {
                         ))}
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-              {/* Problems List */}
-              <div className="space-y-4">
-                {displayedProblems.map((problem) => (
-                  <Link
-                    key={problem.id}
-                    to={`/problem/${problem.id}`}
-                    className="block group"
-                  >
-                    <Card className="glass-effect hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                      <CardContent className="p-6">
+          {/* Problems List */}
+          <div className="space-y-4">
+            {displayedProblems.map((problem) => (
+              <Link
+                key={problem.id}
+                to={`/problem/${problem.id}`}
+                className="block group"
+              >
+                <Card className="glass-effect hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <CardContent className="p-6">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 flex-1 min-w-0">
                             {problem.solved ? (
@@ -306,35 +386,33 @@ const Dashboard = () => {
                               {problem.acceptance}
                             </span>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
 
-                {loading && (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                )}
-
-                {!hasMore && displayedProblems.length > 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No more problems to load
-                  </div>
-                )}
-
-                {displayedProblems.length === 0 && !loading && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No problems found matching your filters
-                  </div>
-                )}
+            {loading && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            </div>
-          </main>
+            )}
+
+            {!hasMore && displayedProblems.length > 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No more problems to load
+              </div>
+            )}
+
+            {displayedProblems.length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">
+                No problems found matching your filters
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </main>
+    </div>
   );
 };
 

@@ -22,18 +22,18 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background"></div>
-      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-glow"></div>
+      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse-glow delay-1000"></div>
 
-      <Card className="relative w-full max-w-md glass-effect shadow-2xl">
+      <Card className="relative w-full max-w-md glass-effect shadow-2xl animate-fade-in">
         <CardHeader className="space-y-4 text-center">
-          <div className="flex justify-center">
+          <div className="flex justify-center animate-spin-in">
             <Link to="/" className="flex items-center gap-2">
               <Code2 className="h-8 w-8 text-primary" />
               <span className="text-2xl font-bold text-gradient">CodeMentor AI</span>
             </Link>
           </div>
-          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
+          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg animate-slide-up delay-100">
             <Button
               type="button"
               variant={isLogin ? "default" : "ghost"}
@@ -51,17 +51,17 @@ const Auth = () => {
               Sign Up
             </Button>
           </div>
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-2xl animate-slide-up delay-300">
             {isLogin ? "Welcome back" : "Create your account"}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="animate-slide-up delay-700">
             {isLogin
               ? "Enter your credentials to access your account"
               : "Start your coding journey today"}
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="animate-fade-in delay-1000">
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">

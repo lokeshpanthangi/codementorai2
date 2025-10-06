@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Code2, LogOut, User, Sun, Moon, Settings } from "lucide-react";
+import { Code2, LogOut, User, Settings } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,8 +9,7 @@ import {
   DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Switch } from "./ui/switch";
-import { useTheme } from "@/contexts/ThemeContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface NavbarProps {
   isAuthenticated?: boolean;
@@ -19,7 +18,6 @@ interface NavbarProps {
 
 const Navbar = ({ isAuthenticated = false, username = "User" }: NavbarProps) => {
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
   
   const isActive = (path: string) => location.pathname === path;
 
@@ -77,12 +75,7 @@ const Navbar = ({ isAuthenticated = false, username = "User" }: NavbarProps) => 
               </Link>
             </div>
 
-            {/* Theme Toggle */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50">
-              <Sun className="h-4 w-4 text-muted-foreground" />
-              <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
-              <Moon className="h-4 w-4 text-muted-foreground" />
-            </div>
+            <ThemeToggle />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -139,12 +132,7 @@ const Navbar = ({ isAuthenticated = false, username = "User" }: NavbarProps) => 
               </a>
             </div>
 
-            {/* Theme Toggle */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50">
-              <Sun className="h-4 w-4 text-muted-foreground" />
-              <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
-              <Moon className="h-4 w-4 text-muted-foreground" />
-            </div>
+            <ThemeToggle />
 
             <Link to="/auth">
               <Button 
