@@ -22,22 +22,22 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background"></div>
-      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-glow"></div>
-      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse-glow delay-1000"></div>
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
 
-      <Card className="relative w-full max-w-md glass-effect shadow-2xl animate-fade-in">
+      <Card className="relative w-full max-w-md glass-effect shadow-2xl">
         <CardHeader className="space-y-4 text-center">
-          <div className="flex justify-center animate-spin-in">
+          <div className="flex justify-center">
             <Link to="/" className="flex items-center gap-2">
               <Code2 className="h-8 w-8 text-primary" />
               <span className="text-2xl font-bold text-gradient">CodeMentor AI</span>
             </Link>
           </div>
-          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg animate-slide-up delay-100">
+          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg transition-all duration-300">
             <Button
               type="button"
               variant={isLogin ? "default" : "ghost"}
-              className="flex-1"
+              className="flex-1 transition-all duration-300"
               onClick={() => setIsLogin(true)}
             >
               Login
@@ -45,23 +45,23 @@ const Auth = () => {
             <Button
               type="button"
               variant={!isLogin ? "default" : "ghost"}
-              className="flex-1"
+              className="flex-1 transition-all duration-300"
               onClick={() => setIsLogin(false)}
             >
               Sign Up
             </Button>
           </div>
-          <CardTitle className="text-2xl animate-slide-up delay-300">
+          <CardTitle className="text-2xl">
             {isLogin ? "Welcome back" : "Create your account"}
           </CardTitle>
-          <CardDescription className="animate-slide-up delay-700">
+          <CardDescription>
             {isLogin
               ? "Enter your credentials to access your account"
               : "Start your coding journey today"}
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="animate-fade-in delay-1000">
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">

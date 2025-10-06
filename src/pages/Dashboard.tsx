@@ -12,7 +12,15 @@ import {
   Sparkles,
   Search,
   Circle,
+  ChevronDown,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Problem {
   id: number;
@@ -211,70 +219,112 @@ const Dashboard = () => {
 
           {/* Featured Sections */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Recommended Problems */}
+            {/* Recommended Problems - Larger */}
             <Card className="glass-effect lg:col-span-1">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
+              <CardContent className="p-6 h-full">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Sparkles className="h-6 w-6 text-primary" />
                   Recommended for You
                 </h3>
-                <div className="space-y-3">
-                  <div className="p-3 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                    <p className="font-medium text-sm">Two Sum</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">Easy</Badge>
-                      <span className="text-xs text-muted-foreground">Array</span>
+                <div className="space-y-4">
+                  <Link to="/problem/1" className="block">
+                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                      <p className="font-medium text-base mb-2">Two Sum</p>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
+                        <span className="text-sm text-muted-foreground">Array</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Master array manipulation techniques</p>
                     </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                    <p className="font-medium text-sm">Valid Parentheses</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">Easy</Badge>
-                      <span className="text-xs text-muted-foreground">Stack</span>
+                  </Link>
+                  <Link to="/problem/20" className="block">
+                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                      <p className="font-medium text-base mb-2">Valid Parentheses</p>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
+                        <span className="text-sm text-muted-foreground">Stack</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Learn stack data structure fundamentals</p>
                     </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                    <p className="font-medium text-sm">Merge Two Sorted Lists</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">Easy</Badge>
-                      <span className="text-xs text-muted-foreground">Linked List</span>
+                  </Link>
+                  <Link to="/problem/2" className="block">
+                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                      <p className="font-medium text-base mb-2">Add Two Numbers</p>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
+                        <span className="text-sm text-muted-foreground">Linked List</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Practice linked list operations</p>
                     </div>
-                  </div>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Analytics */}
+            {/* Analytics - Pie Chart */}
             <Card className="glass-effect">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-bold mb-4">Weekly Progress</h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
+              <CardContent className="p-6 h-full flex flex-col">
+                <h3 className="text-lg font-bold mb-4">Progress Overview</h3>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-[200px] aspect-square">
+                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                      {/* Easy - 60% (216 degrees) - Violet */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="hsl(270 91% 65%)"
+                        strokeWidth="20"
+                        strokeDasharray="151 251"
+                        strokeDashoffset="0"
+                      />
+                      {/* Medium - 30% (108 degrees) - White/Light */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="hsl(0 0% 95%)"
+                        strokeWidth="20"
+                        strokeDasharray="75.4 326"
+                        strokeDashoffset="-151"
+                      />
+                      {/* Hard - 10% (36 degrees) - Black/Dark */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="hsl(0 0% 10%)"
+                        strokeWidth="20"
+                        strokeDasharray="25.1 226"
+                        strokeDashoffset="-226.4"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(270 91% 65%)' }}></div>
                       <span className="text-sm text-muted-foreground">Easy</span>
-                      <span className="text-sm font-medium">12/20</span>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500" style={{ width: '60%' }}></div>
-                    </div>
+                    <span className="text-sm font-medium">12/20</span>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(0 0% 95%)' }}></div>
                       <span className="text-sm text-muted-foreground">Medium</span>
-                      <span className="text-sm font-medium">8/15</span>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-yellow-500" style={{ width: '53%' }}></div>
-                    </div>
+                    <span className="text-sm font-medium">8/15</span>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(0 0% 10%)' }}></div>
                       <span className="text-sm text-muted-foreground">Hard</span>
-                      <span className="text-sm font-medium">3/10</span>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-red-500" style={{ width: '30%' }}></div>
-                    </div>
+                    <span className="text-sm font-medium">3/10</span>
                   </div>
                 </div>
               </CardContent>
@@ -302,54 +352,46 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Filters Section */}
+          {/* Search and Filters Section */}
           <Card className="glass-effect mb-6">
             <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Search */}
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search problems..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 bg-background/50"
-                      />
-                    </div>
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                {/* Search */}
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search problems..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 bg-background/50"
+                  />
+                </div>
 
-                    {/* Difficulty Filter */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Difficulty</label>
-                      <div className="flex gap-2 flex-wrap">
-                        {["All", "Easy", "Medium", "Hard"].map((diff) => (
-                          <Button
-                            key={diff}
-                            variant={difficultyFilter === diff ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setDifficultyFilter(diff)}
-                          >
-                            {diff}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
+                {/* Difficulty Filter Dropdown */}
+                <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                  <SelectTrigger className="w-full md:w-[180px] bg-background/50">
+                    <SelectValue placeholder="Difficulty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Difficulties</SelectItem>
+                    <SelectItem value="Easy">Easy</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Hard">Hard</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                    {/* Category Filter */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Category</label>
-                      <div className="flex gap-2 flex-wrap">
-                        {categories.map((cat) => (
-                          <Button
-                            key={cat}
-                            variant={categoryFilter === cat ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCategoryFilter(cat)}
-                          >
-                            {cat}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
+                {/* Category Filter Dropdown */}
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full md:w-[180px] bg-background/50">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Categories</SelectItem>
+                    {categories.filter(cat => cat !== "All").map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
