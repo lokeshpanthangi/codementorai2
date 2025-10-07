@@ -219,137 +219,153 @@ const Dashboard = () => {
 
           {/* Featured Sections */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Recommended Problems - Larger */}
-            <Card className="glass-effect lg:col-span-1">
+            {/* Recommended Problems - Larger (2 columns) */}
+            <Card className="glass-effect lg:col-span-2">
               <CardContent className="p-6 h-full">
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <Sparkles className="h-6 w-6 text-primary" />
                   Recommended for You
                 </h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Link to="/problem/1" className="block">
-                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                      <p className="font-medium text-base mb-2">Two Sum</p>
-                      <div className="flex items-center gap-2">
+                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                      <p className="font-medium text-lg mb-2">Two Sum</p>
+                      <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
                         <span className="text-sm text-muted-foreground">Array</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Master array manipulation techniques</p>
+                      <p className="text-sm text-muted-foreground">Master array manipulation techniques</p>
                     </div>
                   </Link>
                   <Link to="/problem/20" className="block">
-                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                      <p className="font-medium text-base mb-2">Valid Parentheses</p>
-                      <div className="flex items-center gap-2">
+                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                      <p className="font-medium text-lg mb-2">Valid Parentheses</p>
+                      <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
                         <span className="text-sm text-muted-foreground">Stack</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Learn stack data structure fundamentals</p>
+                      <p className="text-sm text-muted-foreground">Learn stack data structure fundamentals</p>
                     </div>
                   </Link>
                   <Link to="/problem/2" className="block">
-                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                      <p className="font-medium text-base mb-2">Add Two Numbers</p>
-                      <div className="flex items-center gap-2">
+                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                      <p className="font-medium text-lg mb-2">Add Two Numbers</p>
+                      <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
                         <span className="text-sm text-muted-foreground">Linked List</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Practice linked list operations</p>
+                      <p className="text-sm text-muted-foreground">Practice linked list operations</p>
+                    </div>
+                  </Link>
+                  <Link to="/problem/3" className="block">
+                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
+                      <p className="font-medium text-lg mb-2">Longest Substring</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
+                        <span className="text-sm text-muted-foreground">String</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">String manipulation mastery</p>
                     </div>
                   </Link>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Analytics - Pie Chart */}
-            <Card className="glass-effect">
-              <CardContent className="p-6 h-full flex flex-col">
-                <h3 className="text-lg font-bold mb-4">Progress Overview</h3>
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-[200px] aspect-square">
-                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                      {/* Easy - 60% (216 degrees) - Violet */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="hsl(270 91% 65%)"
-                        strokeWidth="20"
-                        strokeDasharray="151 251"
-                        strokeDashoffset="0"
-                      />
-                      {/* Medium - 30% (108 degrees) - White/Light */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="hsl(0 0% 95%)"
-                        strokeWidth="20"
-                        strokeDasharray="75.4 326"
-                        strokeDashoffset="-151"
-                      />
-                      {/* Hard - 10% (36 degrees) - Black/Dark */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="hsl(0 0% 10%)"
-                        strokeWidth="20"
-                        strokeDasharray="25.1 226"
-                        strokeDashoffset="-226.4"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <div className="space-y-2 mt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(270 91% 65%)' }}></div>
-                      <span className="text-sm text-muted-foreground">Easy</span>
+            {/* Right Column - Progress and Daily Challenge */}
+            <div className="space-y-6">
+              {/* Progress Overview - Pie Chart with subtle hover animation */}
+              <Card className="glass-effect group transition-all duration-300 hover:shadow-lg hover:shadow-primary/10">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-bold mb-4">Progress Overview</h3>
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="w-full max-w-[180px] aspect-square transition-transform duration-500 group-hover:scale-105">
+                      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                        {/* Easy - 60% - Violet */}
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="none"
+                          stroke="hsl(270 91% 65%)"
+                          strokeWidth="20"
+                          strokeDasharray="151 251"
+                          strokeDashoffset="0"
+                          className="transition-all duration-500"
+                        />
+                        {/* Medium - 30% - White/Light */}
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="none"
+                          stroke="hsl(0 0% 95%)"
+                          strokeWidth="20"
+                          strokeDasharray="75.4 326"
+                          strokeDashoffset="-151"
+                          className="transition-all duration-500"
+                        />
+                        {/* Hard - 10% - Black/Dark */}
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="none"
+                          stroke="hsl(0 0% 10%)"
+                          strokeWidth="20"
+                          strokeDasharray="25.1 226"
+                          strokeDashoffset="-226.4"
+                          className="transition-all duration-500"
+                        />
+                      </svg>
                     </div>
-                    <span className="text-sm font-medium">12/20</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(0 0% 95%)' }}></div>
-                      <span className="text-sm text-muted-foreground">Medium</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(270 91% 65%)' }}></div>
+                        <span className="text-sm text-muted-foreground">Easy</span>
+                      </div>
+                      <span className="text-sm font-medium">12/20</span>
                     </div>
-                    <span className="text-sm font-medium">8/15</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(0 0% 10%)' }}></div>
-                      <span className="text-sm text-muted-foreground">Hard</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(0 0% 95%)' }}></div>
+                        <span className="text-sm text-muted-foreground">Medium</span>
+                      </div>
+                      <span className="text-sm font-medium">8/15</span>
                     </div>
-                    <span className="text-sm font-medium">3/10</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ background: 'hsl(0 0% 10%)' }}></div>
+                        <span className="text-sm text-muted-foreground">Hard</span>
+                      </div>
+                      <span className="text-sm font-medium">3/10</span>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Daily Challenge */}
-            <Card className="glass-effect bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                  <Flame className="h-5 w-5 text-orange-500" />
-                  Daily Challenge
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">Complete today's challenge to maintain your streak!</p>
-                <div className="p-4 rounded-lg bg-background/50 mb-4">
-                  <p className="font-medium mb-2">Longest Substring Without Repeating Characters</p>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
-                    <span className="text-xs text-muted-foreground">String</span>
+              {/* Daily Challenge - Smaller */}
+              <Card className="glass-effect bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    Daily Challenge
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">Keep your streak alive!</p>
+                  <div className="p-4 rounded-lg bg-background/50 mb-4">
+                    <p className="font-medium mb-2">Longest Substring</p>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
+                      <span className="text-xs text-muted-foreground">String</span>
+                    </div>
                   </div>
-                </div>
-                <Button variant="default" className="w-full">
-                  Start Challenge
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button variant="default" className="w-full">
+                    Start Challenge
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Search and Filters Section */}
