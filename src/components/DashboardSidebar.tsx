@@ -32,7 +32,7 @@ export function DashboardSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className={isCollapsed ? "w-14" : "w-60"}>
       <SidebarContent className="pt-4">
         <SidebarGroup>
           <SidebarGroupLabel className={isCollapsed ? "justify-center" : ""}>

@@ -21,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
 
 interface Problem {
   id: number;
@@ -135,12 +137,16 @@ const Dashboard = () => {
   const categories = ["All", "Array", "String", "Hash Table", "Dynamic Programming", "Math", "Sorting", "Tree", "Graph"];
 
   return (
-    <div className="min-h-screen w-full">
-      <Navbar isAuthenticated username="CodeMaster" />
-
-      <main className="flex-1">
+    <SidebarProvider>
+      <div className="min-h-screen w-full flex">
+        <DashboardSidebar />
+        <div className="flex-1 flex flex-col">
+          <Navbar isAuthenticated username="CodeMaster" />
+          
+          <main className="flex-1">
         {/* Hero Section */}
         <div className="container mx-auto px-4 py-8">
+          <SidebarTrigger className="mb-4" />
           <div className="p-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="space-y-2">
@@ -219,52 +225,87 @@ const Dashboard = () => {
 
           {/* Featured Sections */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Recommended Problems - Larger (2 columns) */}
+            {/* Recommended Problems - Line by Line List */}
             <Card className="glass-effect lg:col-span-2">
               <CardContent className="p-6 h-full">
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <Sparkles className="h-6 w-6 text-primary" />
                   Recommended for You
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <Link to="/problem/1" className="block">
-                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                      <p className="font-medium text-lg mb-2">Two Sum</p>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
-                        <span className="text-sm text-muted-foreground">Array</span>
+                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-all border border-transparent hover:border-primary/20 group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-base mb-2 group-hover:text-primary transition-colors">Two Sum</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
+                            <span className="text-xs text-muted-foreground px-2 py-1 bg-background/80 rounded">Array</span>
+                            <span className="text-xs text-muted-foreground">Master array manipulation techniques</span>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <span className="text-xs text-muted-foreground">Acceptance</span>
+                          <div className="text-sm font-medium text-primary">56.4%</div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">Master array manipulation techniques</p>
                     </div>
                   </Link>
+                  
                   <Link to="/problem/20" className="block">
-                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                      <p className="font-medium text-lg mb-2">Valid Parentheses</p>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
-                        <span className="text-sm text-muted-foreground">Stack</span>
+                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-all border border-transparent hover:border-primary/20 group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-base mb-2 group-hover:text-primary transition-colors">Valid Parentheses</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Easy</Badge>
+                            <span className="text-xs text-muted-foreground px-2 py-1 bg-background/80 rounded">Stack</span>
+                            <span className="text-xs text-muted-foreground">Learn stack data structure fundamentals</span>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <span className="text-xs text-muted-foreground">Acceptance</span>
+                          <div className="text-sm font-medium text-primary">41.2%</div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">Learn stack data structure fundamentals</p>
                     </div>
                   </Link>
+
                   <Link to="/problem/2" className="block">
-                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                      <p className="font-medium text-lg mb-2">Add Two Numbers</p>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
-                        <span className="text-sm text-muted-foreground">Linked List</span>
+                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-all border border-transparent hover:border-primary/20 group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-base mb-2 group-hover:text-primary transition-colors">Add Two Numbers</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
+                            <span className="text-xs text-muted-foreground px-2 py-1 bg-background/80 rounded">Linked List</span>
+                            <span className="text-xs text-muted-foreground">Practice linked list operations</span>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <span className="text-xs text-muted-foreground">Acceptance</span>
+                          <div className="text-sm font-medium text-primary">47.0%</div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">Practice linked list operations</p>
                     </div>
                   </Link>
+
                   <Link to="/problem/3" className="block">
-                    <div className="p-5 rounded-lg bg-background/50 hover:bg-accent/10 transition-colors cursor-pointer">
-                      <p className="font-medium text-lg mb-2">Longest Substring</p>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
-                        <span className="text-sm text-muted-foreground">String</span>
+                    <div className="p-4 rounded-lg bg-background/50 hover:bg-accent/10 transition-all border border-transparent hover:border-primary/20 group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-base mb-2 group-hover:text-primary transition-colors">Longest Substring Without Repeating Characters</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium</Badge>
+                            <span className="text-xs text-muted-foreground px-2 py-1 bg-background/80 rounded">String</span>
+                            <span className="text-xs text-muted-foreground">String manipulation mastery</span>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <span className="text-xs text-muted-foreground">Acceptance</span>
+                          <div className="text-sm font-medium text-primary">37.7%</div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">String manipulation mastery</p>
                     </div>
                   </Link>
                 </div>
@@ -470,7 +511,9 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
-    </div>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
