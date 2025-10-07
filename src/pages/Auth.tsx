@@ -29,7 +29,7 @@ const Auth = () => {
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
             <Link to="/" className="flex items-center gap-2">
-              <Code2 className="h-8 w-8 text-primary animate-draw-code" />
+              <Code2 className="h-8 w-8 text-primary" />
               <span className="text-2xl font-bold text-gradient">CodeMentor AI</span>
             </Link>
           </div>
