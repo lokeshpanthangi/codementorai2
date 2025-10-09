@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { submitCode, runTestCases, checkJudge0Status, STATUS_DESCRIPTIONS } from "@/services/judge0Service";
+import { getProblemBySlug, Problem as ProblemType } from "@/services/problemsService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -49,7 +50,13 @@ import {
 import MonacoEditor from "@/components/MonacoEditor";
 
 const Problem = () => {
-  const { id } = useParams();
+  const { id: slugParam } = useParams();
+  const navigate = useNavigate();
+  
+  // Problem data state
+  const [problem, setProblem] = useState<ProblemType | null>(null);
+  const [isLoadingProblem, setIsLoadingProblem] = useState(true);
+  const [problemError, setProblemError] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [language, setLanguage] = useState("python");
   const [selectedTestCase, setSelectedTestCase] = useState<number | null>(null);
@@ -77,107 +84,80 @@ const Problem = () => {
   const editorRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   
-  const [code, setCode] = useState(`# Two Sum Problem
-def twoSum(nums, target):
-    # Write your solution here
-    pass`);
+  const [code, setCode] = useState(``);
 
-  // Language templates for different languages
-  const languageTemplates: Record<string, string> = {
-    python: `# Two Sum Problem
-def twoSum(nums, target):
-    # Write your solution here
+  // Language templates for different languages (only Python, Java, C++)
+  const getDefaultTemplate = (lang: string): string => {
+    const templates: Record<string, string> = {
+      python: `# Write your solution here
+def solution():
     pass`,
-    javascript: `// Two Sum Problem
-function twoSum(nums, target) {
-    // Write your solution here
-}`,
-    typescript: `// Two Sum Problem
-function twoSum(nums: number[], target: number): number[] {
-    // Write your solution here
-    return [];
-}`,
-    java: `// Two Sum Problem
+      java: `// Write your solution here
 class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // Write your solution here
-        return new int[]{};
+    public void solution() {
+        
     }
 }`,
-    cpp: `// Two Sum Problem
-#include <vector>
+      cpp: `// Write your solution here
+#include <iostream>
 using namespace std;
 
 class Solution {
 public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        // Write your solution here
-        return {};
+    void solution() {
+        
     }
 };`,
-    c: `// Two Sum Problem
-#include <stdio.h>
-#include <stdlib.h>
-
-int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
-    // Write your solution here
-    *returnSize = 0;
-    return NULL;
-}`,
-    csharp: `// Two Sum Problem
-using System;
-
-public class Solution {
-    public int[] TwoSum(int[] nums, int target) {
-        // Write your solution here
-        return new int[]{};
-    }
-}`,
-    go: `// Two Sum Problem
-package main
-
-func twoSum(nums []int, target int) []int {
-    // Write your solution here
-    return []int{}
-}`,
-    rust: `// Two Sum Problem
-impl Solution {
-    pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
-        // Write your solution here
-        vec![]
-    }
-}`,
-    kotlin: `// Two Sum Problem
-class Solution {
-    fun twoSum(nums: IntArray, target: Int): IntArray {
-        // Write your solution here
-        return intArrayOf()
-    }
-}`,
-    swift: `// Two Sum Problem
-class Solution {
-    func twoSum(_ nums: [Int], _ target: Int) -> [Int] {
-        // Write your solution here
-        return []
-    }
-}`,
-    php: `<?php
-// Two Sum Problem
-class Solution {
-    function twoSum($nums, $target) {
-        // Write your solution here
-        return [];
-    }
-}`,
-    ruby: `# Two Sum Problem
-def two_sum(nums, target)
-    # Write your solution here
-end`,
+    };
+    return templates[lang] || templates.python;
   };
+
+  // Fetch problem data on mount
+  useEffect(() => {
+    const fetchProblem = async () => {
+      if (!slugParam) {
+        setProblemError("No problem specified");
+        setIsLoadingProblem(false);
+        return;
+      }
+
+      try {
+        setIsLoadingProblem(true);
+        setProblemError(null);
+        const data = await getProblemBySlug(slugParam);
+        setProblem(data);
+        
+        // Set initial code from boilerplate (default to python)
+        const initialLang = 'python';
+        if (data.boilerplates && data.boilerplates[initialLang]) {
+          setCode(data.boilerplates[initialLang]);
+        } else {
+          setCode(getDefaultTemplate(initialLang));
+        }
+      } catch (error: any) {
+        console.error('Failed to fetch problem:', error);
+        setProblemError(error.response?.data?.detail || 'Failed to load problem');
+        toast.error('Failed to load problem', {
+          description: error.response?.data?.detail || 'Please try again'
+        });
+      } finally {
+        setIsLoadingProblem(false);
+      }
+    };
+
+    fetchProblem();
+  }, [slugParam]);
 
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage);
-    setCode(languageTemplates[newLanguage] || "");
+    
+    // Use boilerplate from problem data if available, otherwise use default template
+    if (problem?.boilerplates && problem.boilerplates[newLanguage]) {
+      setCode(problem.boilerplates[newLanguage]);
+    } else {
+      setCode(getDefaultTemplate(newLanguage));
+    }
+    
     setAiInsights([]); // Clear insights when changing language
   };
 
@@ -369,19 +349,20 @@ end`,
     }
   }, [chatMessages, aiMode]);
 
-  // Check Judge0 availability on mount
-  useEffect(() => {
-    const checkCompiler = async () => {
-      const available = await checkJudge0Status();
-      setIsJudge0Available(available);
-      if (!available) {
-        toast.error("Compiler not available", {
-          description: "Run 'docker-compose up -d' to start Judge0"
-        });
-      }
-    };
-    checkCompiler();
-  }, []);
+  // Check Judge0 availability on mount - DISABLED to prevent unwanted requests
+  // You can manually check when user clicks Run or Submit button
+  // useEffect(() => {
+  //   const checkCompiler = async () => {
+  //     const available = await checkJudge0Status();
+  //     setIsJudge0Available(available);
+  //     if (!available) {
+  //       toast.error("Compiler not available", {
+  //         description: "Run 'docker-compose up -d' to start Judge0"
+  //       });
+  //     }
+  //   };
+  //   checkCompiler();
+  // }, []);
 
   // Visible test cases (shown to user)
   const visibleTestCases = [
@@ -497,6 +478,39 @@ end`,
     }
   };
 
+  // Show loading state
+  if (isLoadingProblem) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-lg text-muted-foreground">Loading problem...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (problemError || !problem) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md">
+          <div className="h-20 w-20 rounded-full bg-red-500/10 flex items-center justify-center">
+            <X className="h-10 w-10 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold">Problem Not Found</h2>
+          <p className="text-muted-foreground">
+            {problemError || "The problem you're looking for doesn't exist."}
+          </p>
+          <Button onClick={() => navigate('/problems')} className="mt-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Problems
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Minimal Header */}
@@ -517,7 +531,7 @@ end`,
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Add Two Numbers</BreadcrumbPage>
+              <BreadcrumbPage>{problem.title}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -555,89 +569,78 @@ end`,
                 <div className="custom-scrollbar" style={{ height: "calc(100vh - 122px)", overflowY: "auto" }}>
                   <div className="p-4 space-y-6">
                 <div>
-                  <h1 className="text-3xl font-bold mb-4">2. Add Two Numbers</h1>
+                  <h1 className="text-3xl font-bold mb-4">{problem.title}</h1>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-                      Medium
+                    <Badge className={
+                      problem.difficulty === 'Easy' 
+                        ? "bg-green-500/10 text-green-500 border-green-500/20"
+                        : problem.difficulty === 'Medium'
+                        ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                        : "bg-red-500/10 text-red-500 border-red-500/20"
+                    }>
+                      {problem.difficulty}
                     </Badge>
-                    <Badge variant="outline">Linked List</Badge>
-                    <Badge variant="outline">Math</Badge>
-                    <Badge variant="outline">Recursion</Badge>
+                    {problem.topics.map((topic, idx) => (
+                      <Badge key={idx} variant="outline">{topic}</Badge>
+                    ))}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      Amazon
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      Microsoft
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      Google
-                    </Badge>
+                    {problem.companies.map((company, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {company}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
 
                 <Separator />
 
                 <div className="space-y-4">
-                  <p className="text-foreground leading-relaxed">
-                    You are given two <strong>non-empty</strong> linked lists
-                    representing two non-negative integers. The digits are stored in{" "}
-                    <strong>reverse order</strong>, and each of their nodes contains a
-                    single digit. Add the two numbers and return the sum as a linked
-                    list.
-                  </p>
-                  <p className="text-foreground leading-relaxed">
-                    You may assume the two numbers do not contain any leading zero,
-                    except the number 0 itself.
-                  </p>
+                  <div 
+                    className="text-foreground leading-relaxed prose prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: problem.description.replace(/\n/g, '<br/>') }}
+                  />
+                </div>
+
+                {problem.examples && problem.examples.length > 0 && (
+                  <div className="space-y-4">
+                    {problem.examples.map((example, idx) => (
+                      <div key={idx}>
+                        <h3 className="text-xl font-bold">Example {idx + 1}:</h3>
+                        <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                          <p className="text-sm">
+                            <strong>Input:</strong> {example.input}
+                          </p>
+                          <p className="text-sm">
+                            <strong>Output:</strong> {example.output}
+                          </p>
+                          {example.explanation && (
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Explanation:</strong> {example.explanation}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold">Input Format:</h3>
+                  <p className="text-muted-foreground">{problem.input_format}</p>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-xl font-bold">Example 1:</h3>
-                  <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="mb-4 p-4 bg-card/50 rounded">
-                      <pre className="text-sm">
-                        <code>
-                          l1: 2 → 4 → 3{"\n"}
-                          l2: 5 → 6 → 4{"\n"}
-                          {"\n"}
-                          Output: 7 → 0 → 8{"\n"}
-                          Explanation: 342 + 465 = 807
-                        </code>
-                      </pre>
-                    </div>
-                    <p className="text-sm">
-                      <strong>Input:</strong> l1 = [2,4,3], l2 = [5,6,4]
-                    </p>
-                    <p className="text-sm">
-                      <strong>Output:</strong> [7,0,8]
-                    </p>
-                  </div>
-
-                  <h3 className="text-xl font-bold">Example 2:</h3>
-                  <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-                    <p className="text-sm">
-                      <strong>Input:</strong> l1 = [0], l2 = [0]
-                    </p>
-                    <p className="text-sm">
-                      <strong>Output:</strong> [0]
-                    </p>
-                  </div>
+                  <h3 className="text-xl font-bold">Output Format:</h3>
+                  <p className="text-muted-foreground">{problem.output_format}</p>
                 </div>
 
                 <div className="space-y-4">
                   <h3 className="text-xl font-bold">Constraints:</h3>
-                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    <li>
-                      The number of nodes in each linked list is in the range [1, 100].
-                    </li>
-                    <li>0 ≤ Node.val ≤ 9</li>
-                    <li>
-                      It is guaranteed that the list represents a number that does not
-                      have leading zeros.
-                    </li>
-                  </ul>
+                  <div 
+                    className="text-muted-foreground prose prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: problem.constraints.replace(/\n/g, '<br/>') }}
+                  />
                 </div>
                   </div>
                 </div>
@@ -837,18 +840,8 @@ end`,
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border z-50 max-h-[300px]">
                         <SelectItem value="python">🐍 Python 3</SelectItem>
-                        <SelectItem value="javascript">🟨 JavaScript</SelectItem>
-                        <SelectItem value="typescript">🔷 TypeScript</SelectItem>
                         <SelectItem value="java">☕ Java</SelectItem>
                         <SelectItem value="cpp">⚙️ C++</SelectItem>
-                        <SelectItem value="c">🔧 C</SelectItem>
-                        <SelectItem value="csharp">💜 C#</SelectItem>
-                        <SelectItem value="go">🐹 Go</SelectItem>
-                        <SelectItem value="rust">🦀 Rust</SelectItem>
-                        <SelectItem value="kotlin">🟣 Kotlin</SelectItem>
-                        <SelectItem value="swift">🍎 Swift</SelectItem>
-                        <SelectItem value="php">🐘 PHP</SelectItem>
-                        <SelectItem value="ruby">💎 Ruby</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -870,7 +863,17 @@ end`,
                     <Button variant="ghost" size="sm" onClick={handleFullscreen}>
                       <Maximize2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setCode(languageTemplates[language])}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        if (problem?.boilerplates && problem.boilerplates[language]) {
+                          setCode(problem.boilerplates[language]);
+                        } else {
+                          setCode(getDefaultTemplate(language));
+                        }
+                      }}
+                    >
                       <Undo2 className="h-4 w-4" />
                     </Button>
                   </div>

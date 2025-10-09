@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,10 +33,11 @@ import {
 } from "recharts";
 
 const Profile = () => {
+  const { user } = useAuth();
   // User stats
   const userStats = {
-    username: "CodeMaster",
-    email: "codemaster@example.com",
+    username: user?.username || "Coder",
+    email: user?.email || "user@example.com",
     rank: 1234,
     totalProblems: 520,
     solvedProblems: 47,
@@ -46,7 +48,9 @@ const Profile = () => {
     longestStreak: 12,
     totalSubmissions: 152,
     acceptanceRate: 68.4,
-    joinedDate: "January 2024",
+    joinedDate: user?.created_at 
+      ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      : "Recently",
   };
 
   // Daily activity for the last 30 days

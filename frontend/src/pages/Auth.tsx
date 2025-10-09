@@ -7,15 +7,65 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login, signup } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Form state
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(isLogin ? "Login successful!" : "Account created successfully!");
-    navigate("/dashboard");
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        // Login
+        await login(formData.email, formData.password);
+        toast.success("Login successful!");
+        setIsLoading(false);
+      } else {
+        // Signup validation
+        if (formData.password !== formData.confirmPassword) {
+          toast.error("Passwords do not match");
+          setIsLoading(false);
+          return;
+        }
+
+        if (formData.password.length < 6) {
+          toast.error("Password must be at least 6 characters");
+          setIsLoading(false);
+          return;
+        }
+
+        await signup({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+        });
+        toast.success("Account created successfully!");
+        setIsLoading(false);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Authentication failed");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,6 +121,8 @@ const Auth = () => {
                   type="text"
                   placeholder="johndoe"
                   required
+                  value={formData.username}
+                  onChange={handleInputChange}
                   className="bg-background/50"
                 />
               </div>
@@ -83,6 +135,8 @@ const Auth = () => {
                 type="email"
                 placeholder="john@example.com"
                 required
+                value={formData.email}
+                onChange={handleInputChange}
                 className="bg-background/50"
               />
             </div>
@@ -94,6 +148,8 @@ const Auth = () => {
                 type="password"
                 placeholder="••••••••"
                 required
+                value={formData.password}
+                onChange={handleInputChange}
                 className="bg-background/50"
               />
             </div>
@@ -106,6 +162,8 @@ const Auth = () => {
                   type="password"
                   placeholder="••••••••"
                   required
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
                   className="bg-background/50"
                 />
               </div>
@@ -132,8 +190,8 @@ const Auth = () => {
               </div>
             )}
 
-            <Button type="submit" variant="hero" className="w-full" size="lg">
-              {isLogin ? "Login" : "Sign Up"}
+            <Button type="submit" variant="hero" className="w-full" size="lg" disabled={isLoading}>
+              {isLoading ? "Please wait..." : isLogin ? "Login" : "Sign Up"}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">

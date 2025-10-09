@@ -10,16 +10,28 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavbarProps {
   isAuthenticated?: boolean;
   username?: string;
 }
 
-const Navbar = ({ isAuthenticated = false, username = "User" }: NavbarProps) => {
+const Navbar = ({ isAuthenticated: propIsAuthenticated, username: propUsername }: NavbarProps) => {
   const location = useLocation();
+  const auth = useAuth();
+  
+  // Use auth context if available, otherwise fall back to props
+  const isAuthenticated = auth ? auth.isAuthenticated : propIsAuthenticated;
+  const username = auth?.user?.username || propUsername || "User";
   
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    if (auth) {
+      auth.logout();
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/50 glass-effect">
@@ -106,11 +118,12 @@ const Navbar = ({ isAuthenticated = false, username = "User" }: NavbarProps) => 
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/" className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </Link>
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
