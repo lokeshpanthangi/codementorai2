@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Judge0 API Configuration
-const JUDGE0_API_URL = 'http://localhost:2358';
+// Judge0 API Configuration - Get from environment variables
+const JUDGE0_API_URL = import.meta.env.VITE_JUDGE0_URL || 'http://localhost:2358';
 
 // Language IDs for Judge0 - Popular Languages 2025
 export const LANGUAGE_IDS: Record<string, number> = {

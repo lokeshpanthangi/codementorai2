@@ -1,8 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+// Get backend URL from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 // Create axios instance with base configuration
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
