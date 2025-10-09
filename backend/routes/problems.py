@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -32,6 +32,7 @@ class ProblemCreate(BaseModel):
     topics: List[str] = Field(default_factory=list)
     companies: List[str] = Field(default_factory=list)
     examples: List[ProblemExample] = Field(default_factory=list)
+    boilerplates: Dict[str, str] = Field(default_factory=dict)
 
 
 class ProblemResponse(BaseModel):
@@ -47,6 +48,8 @@ class ProblemResponse(BaseModel):
     companies: List[str]
     examples: List[ProblemExample]
     created_at: datetime
+    updated_at: datetime
+    boilerplates: Dict[str, str]
 
 
 @problem_router.post("/", response_model=ProblemResponse, status_code=status.HTTP_201_CREATED)

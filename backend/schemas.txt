@@ -54,7 +54,17 @@ db.users.createIndex({ username: 1 }, { unique: true });
     }
   ],
 
-  created_at: ISODate()
+  // boilerplates for each supported language
+  boilerplates: {
+    "python": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\n\nclass Solution:\n    def addTwoNumbers(self, l1, l2):\n        # write your code here\n        pass",
+
+    "cpp": "/**\n * Definition for singly-linked list.\n * struct ListNode {\n *     int val;\n *     ListNode *next;\n *     ListNode() : val(0), next(nullptr) {}\n *     ListNode(int x) : val(x), next(nullptr) {}\n *     ListNode(int x, ListNode *next) : val(x), next(next) {}\n * };\n */\nclass Solution {\npublic:\n    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {\n        // write your code here\n    }\n};",
+
+    "java": "class Solution {\n    public ListNode addTwoNumbers(ListNode l1, ListNode l2) {\n        // write your code here\n        return null;\n    }\n}"
+  },
+
+  created_at: ISODate(),
+  updated_at: ISODate()
 }
 
 ```

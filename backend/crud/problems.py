@@ -24,6 +24,8 @@ def _serialize_problem(problem: Optional[Dict[str, Any]]) -> Optional[Dict[str, 
         "companies": problem.get("companies", []),
         "examples": problem.get("examples", []),
         "created_at": problem.get("created_at"),
+        "updated_at": problem.get("updated_at"),
+        "boilerplates": problem.get("boilerplates", {}),
     }
 
 
@@ -44,7 +46,10 @@ async def create_problem(
     topics: Optional[List[str]] = None,
     companies: Optional[List[str]] = None,
     examples: Optional[List[Dict[str, Any]]] = None,
+    boilerplates: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
+    now = datetime.utcnow()
+
     document = {
         "title": title,
         "slug": slug,
@@ -56,7 +61,9 @@ async def create_problem(
         "topics": topics or [],
         "companies": companies or [],
         "examples": examples or [],
-        "created_at": datetime.utcnow(),
+        "boilerplates": boilerplates or {},
+        "created_at": now,
+        "updated_at": now,
     }
 
     try:
