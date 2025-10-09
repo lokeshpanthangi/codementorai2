@@ -68,7 +68,7 @@ db.problems.createIndex({ difficulty: 1 });
 
 ---
 
-### 🧩 3. `test_cases`
+### 🧩 3. `testcases`
 
 Each test case links to a `problem_id`.
 
@@ -101,7 +101,7 @@ Each submission links to both `user_id` and `problem_id`.
   problem_id: ObjectId("..."),  // ref problems._id
   code: "def twoSum(nums, target): ...",
   language: "python",
-  status: "Accepted", // Pending | Accepted | Wrong Answer | Runtime Error | Compilation Error
+  status: "Accepted", // Accepted | Wrong Answer | Runtime Error | Compilation Error
   execution_time: 0.56,
   test_results: [
     {
