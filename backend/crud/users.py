@@ -47,3 +47,14 @@ async def authenticate_user(email: str, password: str) -> Optional[dict]:
     user["_id"] = str(user["_id"])
     user.pop("password_hash")
     return user
+
+
+# ✅ Get user by email
+async def get_user_by_email(email: str) -> Optional[dict]:
+    user = await db.users.find_one({"email": email})
+    if not user:
+        return None
+    
+    user["_id"] = str(user["_id"])
+    user.pop("password_hash", None)
+    return user

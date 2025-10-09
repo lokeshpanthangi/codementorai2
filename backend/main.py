@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+#IMPORT CORS
+from fastapi.middleware.cors import CORSMiddleware
+
 
 from crud.problems import ensure_indexes as ensure_problem_indexes
 from crud.submissions import ensure_indexes as ensure_submission_indexes
@@ -14,6 +17,20 @@ app.include_router(user_router)
 app.include_router(problem_router)
 app.include_router(test_case_router)
 app.include_router(submissions_router)
+
+
+# CORS settings
+origins = [
+    "http://localhost:3000",
+    "https://your-frontend-domain.com",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")

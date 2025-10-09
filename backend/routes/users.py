@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
-from crud.users import create_user,authenticate_user
+from typing import Optional
+from crud.users import create_user,authenticate_user, get_user_by_email
 from auth import create_access_token, verify_access_token
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
@@ -14,9 +15,16 @@ class UserSignup(BaseModel):
     password: str
 
 
+class UserResponse(BaseModel):
+    id: Optional[str] = None
+    username: str
+    email: str
+    created_at: Optional[str] = None
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user: UserResponse
 
 
 # ---------- Routes ----------
@@ -36,13 +44,42 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     access_token = create_access_token({"sub": user["email"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    # Return token with user data
+    created_at_str = None
+    if user.get("created_at"):
+        created_at_str = user["created_at"].isoformat()
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user": {
+            "id": user.get("_id"),
+            "username": user.get("username"),
+            "email": user.get("email"),
+            "created_at": created_at_str
+        }
+    }
 
 
-@user_router.get("/me")
+@user_router.get("/me", response_model=UserResponse)
 async def get_user_profile(token_data: dict = Depends(verify_access_token)):
-    """Protected route to verify JWT and return user data"""
+    """Protected route to get current user data"""
     email = token_data.get("sub")
     if not email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
-    return {"message": f"Access granted for {email}"}
+    
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    created_at_str = None
+    if user.get("created_at"):
+        created_at_str = user["created_at"].isoformat()
+    
+    return {
+        "id": user.get("_id"),
+        "username": user.get("username"),
+        "email": user.get("email"),
+        "created_at": created_at_str
+    }
