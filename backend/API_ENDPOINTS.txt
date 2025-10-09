@@ -1,0 +1,137 @@
+CodeMentor API Reference (Generated 2025-10-10)
+=============================================
+Base URL (development): http://localhost:8000
+
+Authentication
+--------------
+Most routes (except `/`, `/users/signup`, and `/users/login`) require a Bearer token in the `Authorization` header. Obtain the token by logging in and use the value returned in `access_token`.
+
+Root
+----
+GET /
+  • Auth: None
+  • Purpose: Health check that returns `{"message": "Welcome to the CodeMentor API"}`.
+
+Users
+-----
+POST /users/signup
+  • Auth: None
+  • Purpose: Create a new user account.
+  • Request Body (JSON):
+    - `username` (string)
+    - `email` (string, valid email)
+    - `password` (string)
+  • Success: 201 with `{ "message": "User created successfully", "user": {"_id", "username", "email", "created_at"} }`.
+  • Errors: 400 if the email or username already exists.
+
+POST /users/login
+  • Auth: None
+  • Purpose: Authenticate a user and issue a JWT.
+  • Request Body (form-data, `application/x-www-form-urlencoded`):
+    - `username` (string, email address)
+    - `password` (string)
+  • Success: 200 with `{ "access_token": <JWT>, "token_type": "bearer" }`.
+  • Errors: 401 if credentials are invalid.
+
+GET /users/me
+  • Auth: Bearer token required.
+  • Purpose: Validate the provided token and return the associated user email.
+  • Success: 200 with `{ "message": "Access granted for <email>" }`.
+  • Errors: 401 if the token is missing, expired, or invalid.
+
+Problems
+--------
+POST /problems/
+  • Auth: Bearer token required.
+  • Purpose: Create a new coding problem.
+  • Request Body (JSON):
+    - `title` (string, 3-200 chars)
+    - `slug` (string, 3-200 chars, unique)
+    - `difficulty` (string, one of Easy | Medium | Hard)
+    - `description` (string)
+    - `input_format` (string)
+    - `output_format` (string)
+    - `constraints` (string)
+    - `topics` (array of strings, optional)
+    - `companies` (array of strings, optional)
+    - `examples` (array of `{ input, output, explanation? }`, optional)
+    - `boilerplates` (object mapping language -> starter code, optional)
+  • Success: 201 with full problem record including `created_at` and `updated_at` timestamps.
+  • Errors: 400 if the slug already exists or validation fails.
+
+GET /problems/
+  • Auth: Bearer token required.
+  • Purpose: List problems, newest first.
+  • Query Parameters:
+    - `difficulty` (optional, Easy | Medium | Hard) to filter results.
+  • Success: 200 with an array of problem objects.
+
+GET /problems/id/{problem_id}
+  • Auth: Bearer token required.
+  • Purpose: Fetch a single problem by MongoDB ObjectId.
+  • Success: 200 with the problem object.
+  • Errors: 404 if not found or the id is invalid.
+
+GET /problems/{slug}
+  • Auth: Bearer token required.
+  • Purpose: Fetch a problem by its slug.
+  • Success: 200 with the problem object.
+  • Errors: 404 if not found.
+
+Test Cases
+---------
+POST /test-cases/
+  • Auth: Bearer token required.
+  • Purpose: Create a test case for a problem.
+  • Request Body (JSON):
+    - `problem_id` (string, problem ObjectId)
+    - `input` (string)
+    - `expected_output` (string)
+    - `is_hidden` (boolean, defaults to false)
+  • Success: 201 with the stored test case including created timestamp.
+  • Errors: 400 if the problem reference is invalid or data fails validation.
+
+GET /test-cases/public
+  • Auth: Bearer token required.
+  • Purpose: List non-hidden test cases.
+  • Query Parameters:
+    - `problem_id` (optional) to restrict results to a specific problem.
+  • Success: 200 with an array of public test cases.
+
+GET /test-cases/hidden
+  • Auth: Bearer token required.
+  • Purpose: List hidden test cases (typically for internal grading).
+  • Query Parameters:
+    - `problem_id` (optional) to restrict results to a specific problem.
+  • Success: 200 with an array of hidden test cases.
+
+Submissions
+-----------
+POST /submissions/
+  • Auth: Bearer token required.
+  • Purpose: Record a user submission for a problem.
+  • Request Body (JSON):
+    - `user_id` (string, user ObjectId)
+    - `problem_id` (string, problem ObjectId)
+    - `code` (string)
+    - `language` (string)
+    - `status` (string, one of Pending | Accepted | Wrong Answer | Runtime Error | Compilation Error)
+    - `execution_time` (number, optional seconds)
+    - `test_results` (array of objects with `test_case_id?`, `status?`, `output?`, `exec_time?`)
+  • Success: 201 with the stored submission.
+  • Errors: 400 if references are invalid or validation fails.
+
+GET /submissions/
+  • Auth: Bearer token required.
+  • Purpose: List submissions with optional filters.
+  • Query Parameters:
+    - `user_id` (optional)
+    - `problem_id` (optional)
+    - `status_filter` (optional, Accepted | Wrong Answer | Runtime Error | Compilation Error | Pending)
+  • Success: 200 with an array of submissions matching the filters.
+
+Error Handling Notes
+--------------------
+- Missing or invalid tokens result in 401 responses from protected routes.
+- Duplicate resource creation attempts (e.g., problem slug) return 400.
+- Not-found resources return 404 where applicable.
