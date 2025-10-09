@@ -1,0 +1,126 @@
+### 🧩 1. `users`
+
+```js
+{
+  _id: ObjectId("..."),
+  username: "nani",
+  email: "nani@example.com",
+  password_hash: "hashed_pw_here",
+  created_at: ISODate()
+}
+```
+
+**Indexes:**
+
+```js
+db.users.createIndex({ email: 1 }, { unique: true });
+db.users.createIndex({ username: 1 }, { unique: true });
+```
+
+---
+
+### 🧩 2. `problems`
+
+```js
+{
+  _id: ObjectId("..."),
+  title: "Add Two Numbers",
+  slug: "add-two-numbers",
+  difficulty: "Medium", // Easy | Medium | Hard
+
+  // core problem info
+  description: "You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each node contains a single digit. Add the two numbers and return the sum as a linked list.",
+  input_format: "l1: ListNode, l2: ListNode",
+  output_format: "ListNode",
+  constraints: "The number of nodes in each linked list is in the range [1, 100]. 0 ≤ Node.val ≤ 9.",
+
+  // topics/tags
+  topics: ["Linked List", "Math", "Recursion"],
+
+  // company tags
+  companies: ["Amazon", "Microsoft", "Google"],
+
+  // multiple examples allowed
+  examples: [
+    {
+      input: "l1 = [2,4,3], l2 = [5,6,4]",
+      output: "[7,0,8]",
+      explanation: "342 + 465 = 807"
+    },
+    {
+      input: "l1 = [0], l2 = [0]",
+      output: "[0]",
+      explanation: null
+    }
+  ],
+
+  created_at: ISODate()
+}
+
+```
+
+**Indexes:**
+
+```js
+db.problems.createIndex({ slug: 1 }, { unique: true });
+db.problems.createIndex({ difficulty: 1 });
+```
+
+---
+
+### 🧩 3. `test_cases`
+
+Each test case links to a `problem_id`.
+
+```js
+{
+  _id: ObjectId("..."),
+  problem_id: ObjectId("..."), // reference to problems._id
+  input: "[2,7,11,15], 9",
+  expected_output: "[0,1]",
+  is_hidden: false
+}
+```
+
+**Indexes:**
+
+```js
+db.test_cases.createIndex({ problem_id: 1 });
+```
+
+---
+
+### 🧩 4. `submissions`
+
+Each submission links to both `user_id` and `problem_id`.
+
+```js
+{
+  _id: ObjectId("..."),
+  user_id: ObjectId("..."),     // ref users._id
+  problem_id: ObjectId("..."),  // ref problems._id
+  code: "def twoSum(nums, target): ...",
+  language: "python",
+  status: "Accepted", // Pending | Accepted | Wrong Answer | Runtime Error | Compilation Error
+  execution_time: 0.56,
+  test_results: [
+    {
+      test_case_id: ObjectId("..."),  // ref test_cases._id
+      status: "Passed",
+      output: "[0,1]",
+      exec_time: 0.32
+    }
+  ],
+  created_at: ISODate()
+}
+```
+
+**Indexes:**
+
+```js
+db.submissions.createIndex({ user_id: 1 });
+db.submissions.createIndex({ problem_id: 1 });
+db.submissions.createIndex({ status: 1 });
+```
+
+---
