@@ -15,6 +15,30 @@
 |----------|-------------|---------------|
 | `VITE_API_BASE_URL` | Backend API base URL | `http://localhost:8000` |
 | `VITE_JUDGE0_URL` | Judge0 code execution service URL | `http://localhost:2358` |
+| `VITE_JUDGE0_API_KEY` | Judge0 API key (for hosted APIs) | `(empty)` |
+
+### Judge0 Configuration Options
+
+**Option 1: RapidAPI (Recommended for free tier)**
+```env
+VITE_JUDGE0_URL=https://judge0-ce.p.rapidapi.com
+VITE_JUDGE0_API_KEY=your_rapidapi_key_here
+```
+- Free tier: 50 requests/day
+- Sign up at: https://rapidapi.com/judge0-official/api/judge0-ce
+
+**Option 2: Sulu Solutions Hosted API**
+```env
+VITE_JUDGE0_URL=https://ce.judge0.com
+VITE_JUDGE0_API_KEY=your_sulu_api_key_here
+```
+- Sign up at: https://ce.judge0.com/
+
+**Option 3: Local Docker**
+```env
+VITE_JUDGE0_URL=http://localhost:2358
+VITE_JUDGE0_API_KEY=
+```
 
 ### Development Environment
 
@@ -54,6 +78,17 @@ VITE_JUDGE0_URL=https://judge0.yourproductiondomain.com
 
 ### Judge0 not working?
 
-1. Verify `VITE_JUDGE0_URL` points to running Judge0 instance
-2. Run `docker-compose up -d` to start Judge0 services
-3. Test Judge0 availability: `curl http://localhost:2358/about`
+1. **For hosted APIs:**
+   - Verify your API key is correct
+   - Check rate limits (RapidAPI free tier: 50 requests/day)
+   - Ensure `VITE_JUDGE0_URL` and `VITE_JUDGE0_API_KEY` are set correctly
+
+2. **For local Docker:**
+   - Verify `VITE_JUDGE0_URL` points to running Judge0 instance
+   - Run `docker-compose up -d` to start Judge0 services
+   - Test Judge0 availability: `curl http://localhost:2358/about`
+
+3. **API Key issues:**
+   - RapidAPI: Make sure you've subscribed to the Basic (free) plan
+   - Sulu Solutions: Verify your account is active
+   - Check that your API key is properly set in `.env`

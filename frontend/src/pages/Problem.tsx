@@ -32,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { submitCode, runTestCases, checkJudge0Status, STATUS_DESCRIPTIONS } from "@/services/judge0Service";
 import { getProblemBySlug, Problem as ProblemType } from "@/services/problemsService";
+import { getPublicTestCases, getHiddenTestCases, TestCase } from "@/services/testCasesService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -57,6 +58,12 @@ const Problem = () => {
   const [problem, setProblem] = useState<ProblemType | null>(null);
   const [isLoadingProblem, setIsLoadingProblem] = useState(true);
   const [problemError, setProblemError] = useState<string | null>(null);
+  
+  // Test cases state
+  const [visibleTestCases, setVisibleTestCases] = useState<TestCase[]>([]);
+  const [hiddenTestCases, setHiddenTestCases] = useState<TestCase[]>([]);
+  const [isLoadingTestCases, setIsLoadingTestCases] = useState(false);
+  
   const [showResults, setShowResults] = useState(false);
   const [language, setLanguage] = useState("python");
   const [selectedTestCase, setSelectedTestCase] = useState<number | null>(null);
@@ -364,26 +371,56 @@ public:
   //   checkCompiler();
   // }, []);
 
-  // Visible test cases (shown to user)
-  const visibleTestCases = [
-    { input: "[2,7,11,15]\n9", expectedOutput: "[0,1]" },
-    { input: "[3,2,4]\n6", expectedOutput: "[1,2]" },
-    { input: "[3,3]\n6", expectedOutput: "[0,1]" },
-  ];
+  // Fetch test cases when problem is loaded
+  useEffect(() => {
+    const fetchTestCases = async () => {
+      if (!problem?.id) return;
 
-  // Hidden test cases (for submission only)
-  const hiddenTestCases = [
-    { input: "[1,2,3,4,5]\n9", expectedOutput: "[3,4]" },
-    { input: "[0,4,3,0]\n0", expectedOutput: "[0,3]" },
-    { input: "[2,5,5,11]\n10", expectedOutput: "[1,2]" },
-    { input: "[-1,-2,-3,-4,-5]\n-8", expectedOutput: "[2,4]" },
-    { input: "[1,1,1,1,1,1]\n2", expectedOutput: "[0,1]" },
-  ];
+      try {
+        setIsLoadingTestCases(true);
+        const [publicCases, hidden] = await Promise.all([
+          getPublicTestCases(problem.id),
+          getHiddenTestCases(problem.id)
+        ]);
+        setVisibleTestCases(publicCases);
+        setHiddenTestCases(hidden);
+      } catch (error: any) {
+        console.error('Failed to fetch test cases:', error);
+        toast.error('Failed to load test cases', {
+          description: 'Using default test cases'
+        });
+        // Set empty arrays if fetch fails
+        setVisibleTestCases([]);
+        setHiddenTestCases([]);
+      } finally {
+        setIsLoadingTestCases(false);
+      }
+    };
+
+    fetchTestCases();
+  }, [problem?.id]);
+
+  const ensureJudge0Online = async () => {
+    const available = await checkJudge0Status();
+    setIsJudge0Available(available);
+
+    if (!available) {
+      toast.error("Judge0 service unavailable", {
+        description: "Verify your Judge0 URL/API key or try again later"
+      });
+    }
+
+    return available;
+  };
 
   const handleRun = async () => {
-    if (!isJudge0Available) {
-      toast.error("Compiler not running", {
-        description: "Please start Judge0: docker-compose up -d"
+    if (!(await ensureJudge0Online())) {
+      return;
+    }
+
+    if (visibleTestCases.length === 0) {
+      toast.error("No test cases available", {
+        description: "This problem doesn't have any visible test cases yet"
       });
       return;
     }
@@ -394,8 +431,14 @@ public:
     setSelectedTestCase(1); // Auto-select first test case
 
     try {
+      // Convert TestCase[] to the format expected by runTestCases
+      const testCasesForExecution = visibleTestCases.map(tc => ({
+        input: tc.input,
+        expectedOutput: tc.expected_output
+      }));
+      
       // Run code with all visible test cases
-      const results = await runTestCases(code, language, visibleTestCases);
+      const results = await runTestCases(code, language, testCasesForExecution);
       setTestResults(results);
 
       const passedCount = results.filter(r => r.passed).length;
@@ -421,9 +464,14 @@ public:
   };
 
   const handleSubmit = async () => {
-    if (!isJudge0Available) {
-      toast.error("Compiler not running", {
-        description: "Please start Judge0: docker-compose up -d"
+    if (!(await ensureJudge0Online())) {
+      return;
+    }
+
+    const allTestCases = [...visibleTestCases, ...hiddenTestCases];
+    if (allTestCases.length === 0) {
+      toast.error("No test cases available", {
+        description: "This problem doesn't have any test cases yet"
       });
       return;
     }
@@ -433,40 +481,50 @@ public:
     setIsBottomPanelCollapsed(false);
 
     try {
-      // Run all hidden test cases (not shown to user)
-      const results = await runTestCases(code, language, hiddenTestCases);
-      setTestResults(results);
+      const testCasesForExecution = allTestCases.map(tc => ({
+        input: tc.input,
+        expectedOutput: tc.expected_output
+      }));
 
-      const passedCount = results.filter(r => r.passed).length;
-      const totalCount = results.length;
+      const results = await runTestCases(code, language, testCasesForExecution);
 
-      // Calculate complexity metrics
-      const avgTime = results.reduce((sum, r) => sum + (parseFloat(r.time) || 0), 0) / results.length;
-      const avgMemory = results.reduce((sum, r) => sum + (r.memory || 0), 0) / results.length;
+      const enrichedResults = results.map((result, index) => ({
+        ...result,
+        isHidden: allTestCases[index]?.is_hidden ?? false,
+        input: allTestCases[index]?.input ?? '',
+        expectedOutput: allTestCases[index]?.expected_output ?? ''
+      }));
 
-      // Store submission result with complexity analysis
+      // Update bottom panel with latest visible case results
+      setTestResults(enrichedResults.slice(0, visibleTestCases.length));
+
+      const passedCount = enrichedResults.filter(r => r.passed).length;
+      const totalCount = enrichedResults.length;
+
+      const avgTime = enrichedResults.reduce((sum, r) => sum + (parseFloat(r.time) || 0), 0) / enrichedResults.length;
+      const avgMemory = enrichedResults.reduce((sum, r) => sum + (r.memory || 0), 0) / enrichedResults.length;
+
       setSubmissionResult({
         passedCount,
         totalCount,
-        results,
+        results: enrichedResults,
         avgTime: avgTime.toFixed(4),
-        avgMemory: (avgMemory / 1024).toFixed(2), // Convert to MB
-        timeComplexity: "O(n)", // This would be analyzed from code
-        spaceComplexity: "O(1)", // This would be analyzed from code
+        avgMemory: (avgMemory / 1024).toFixed(2),
+        timeComplexity: "O(n)",
+        spaceComplexity: "O(1)",
         timestamp: new Date(),
         status: passedCount === totalCount ? "Accepted" : "Wrong Answer"
       });
 
-      // Switch to Result tab
       setActiveTab("result");
 
       if (passedCount === totalCount) {
-        toast.success("Accepted! All hidden test cases passed! 🎉", {
-          description: `${passedCount}/${totalCount} hidden test cases passed`
+        toast.success("Accepted! All test cases passed! 🎉", {
+          description: `${passedCount}/${totalCount} test cases passed`
         });
       } else {
         toast.error(`Wrong Answer`, {
-          description: `${passedCount}/${totalCount} hidden test cases passed`
+          description: `${passedCount}/${totalCount} test cases passed`
         });
       }
     } catch (error: any) {
@@ -739,16 +797,25 @@ public:
                                 <Badge className="bg-red-500/10 text-red-500 border-red-500/20">
                                   Test Case {firstFailedTest.testCase}
                                 </Badge>
+                                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                  {firstFailedTest.isHidden ? "Hidden" : "Public"}
+                                </span>
                                 <span className="text-sm text-red-400">Failed</span>
                               </div>
 
                               {/* Expected Output */}
-                              <div>
-                                <p className="text-sm font-medium text-muted-foreground mb-1">Expected Output:</p>
-                                <pre className="text-xs bg-background/50 p-3 rounded border border-border/50">
-                                  {visibleTestCases[firstFailedTest.testCase - 1]?.expectedOutput || "N/A"}
-                                </pre>
-                              </div>
+                              {!firstFailedTest.isHidden ? (
+                                <div>
+                                  <p className="text-sm font-medium text-muted-foreground mb-1">Expected Output:</p>
+                                  <pre className="text-xs bg-background/50 p-3 rounded border border-border/50">
+                                    {firstFailedTest.expectedOutput || "N/A"}
+                                  </pre>
+                                </div>
+                              ) : (
+                                <div className="p-3 rounded border border-border/50 bg-background/40 text-xs text-muted-foreground">
+                                  Expected output is hidden for this test case.
+                                </div>
+                              )}
 
                               {/* Your Output */}
                               <div>
@@ -976,65 +1043,78 @@ public:
 
                   <TabsContent value="testcase" className="flex-1 p-3 custom-scrollbar overflow-y-auto m-0">
                     <div className="space-y-4">
-                      <div className="flex gap-2">
-                        {[1, 2, 3].map((caseNum) => {
-                          const result = testResults.find(r => r.testCase === caseNum);
-                          const isPassed = result?.passed;
-                          const hasFailed = result && !result.passed;
-                          
-                          return (
-                            <Button 
-                              key={caseNum}
-                              variant="outline" 
-                              size="sm" 
-                              className={`relative ${selectedTestCase === caseNum ? "bg-primary/10 border-primary/30" : ""}`}
-                              onClick={() => setSelectedTestCase(selectedTestCase === caseNum ? null : caseNum)}
-                            >
-                              Case {caseNum}
-                              {isPassed && (
-                                <span className="ml-2 text-green-500">✓</span>
-                              )}
-                              {hasFailed && (
-                                <span className="ml-2 text-red-500">✗</span>
-                              )}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Show test case details only when selected */}
-                      {selectedTestCase === null ? (
-                        <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-                          Click on a test case to view details
+                      {/* Loading state */}
+                      {isLoadingTestCases && (
+                        <div className="flex items-center justify-center h-32">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <span className="ml-2 text-muted-foreground">Loading test cases...</span>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {/* Input */}
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-2">Input:</p>
-                            <div className="space-y-2">
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">nums =</p>
-                                <code className="block p-2 rounded bg-muted/50 text-sm">
-                                  {selectedTestCase === 1 ? "[2,7,11,15]" : selectedTestCase === 2 ? "[3,2,4]" : "[3,3]"}
-                                </code>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">target =</p>
-                                <code className="block p-2 rounded bg-muted/50 text-sm">
-                                  {selectedTestCase === 1 ? "9" : selectedTestCase === 2 ? "6" : "6"}
-                                </code>
-                              </div>
-                            </div>
-                          </div>
+                      )}
 
-                          {/* Expected Output */}
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-1">Expected Output:</p>
-                            <code className="block p-2 rounded bg-muted/50 text-sm">
-                              {selectedTestCase === 1 ? "[0,1]" : selectedTestCase === 2 ? "[1,2]" : "[0,1]"}
-                            </code>
+                      {/* No test cases available */}
+                      {!isLoadingTestCases && visibleTestCases.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-32 text-center">
+                          <p className="text-muted-foreground text-sm">No visible test cases available</p>
+                          <p className="text-xs text-muted-foreground mt-1">Test cases will appear here once added</p>
+                        </div>
+                      )}
+
+                      {/* Test cases available */}
+                      {!isLoadingTestCases && visibleTestCases.length > 0 && (
+                        <>
+                          <div className="flex gap-2 flex-wrap">
+                            {visibleTestCases.map((_, index) => {
+                              const caseNum = index + 1;
+                              const result = testResults.find(r => r.testCase === caseNum);
+                              const isPassed = result?.passed;
+                              const hasFailed = result && !result.passed;
+                              
+                              return (
+                                <Button 
+                                  key={caseNum}
+                                  variant="outline" 
+                                  size="sm" 
+                                  className={`relative ${selectedTestCase === caseNum ? "bg-primary/10 border-primary/30" : ""}`}
+                                  onClick={() => setSelectedTestCase(selectedTestCase === caseNum ? null : caseNum)}
+                                >
+                                  Case {caseNum}
+                                  {isPassed && (
+                                    <span className="ml-2 text-green-500">✓</span>
+                                  )}
+                                  {hasFailed && (
+                                    <span className="ml-2 text-red-500">✗</span>
+                                  )}
+                                </Button>
+                              );
+                            })}
                           </div>
+                          
+                          {/* Show test case details only when selected */}
+                          {selectedTestCase === null ? (
+                            <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                              Click on a test case to view details
+                            </div>
+                          ) : selectedTestCase > visibleTestCases.length ? (
+                            <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                              Test case not found
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {/* Input */}
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-2">Input:</p>
+                                <code className="block p-2 rounded bg-muted/50 text-sm whitespace-pre-wrap">
+                                  {visibleTestCases[selectedTestCase - 1]?.input || "N/A"}
+                                </code>
+                              </div>
+
+                              {/* Expected Output */}
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">Expected Output:</p>
+                                <code className="block p-2 rounded bg-muted/50 text-sm whitespace-pre-wrap">
+                                  {visibleTestCases[selectedTestCase - 1]?.expected_output || "N/A"}
+                                </code>
+                              </div>
 
                           {/* Actual Output (if test has been run) */}
                           {testResults.length > 0 && testResults.find(r => r.testCase === selectedTestCase) && (
@@ -1111,6 +1191,8 @@ public:
                             </>
                           )}
                         </div>
+                      )}
+                    </>
                       )}
                     </div>
                   </TabsContent>

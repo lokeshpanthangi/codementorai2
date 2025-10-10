@@ -2,6 +2,32 @@ import axios from 'axios';
 
 // Judge0 API Configuration - Get from environment variables
 const JUDGE0_API_URL = import.meta.env.VITE_JUDGE0_URL || 'http://localhost:2358';
+const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API_KEY;
+
+// Debug logging
+console.log('🔧 Judge0 Configuration:', {
+  url: JUDGE0_API_URL,
+  hasApiKey: !!JUDGE0_API_KEY,
+  apiKeyPrefix: JUDGE0_API_KEY ? JUDGE0_API_KEY.substring(0, 10) + '...' : 'none'
+});
+
+// Check if using RapidAPI
+const isRapidAPI = JUDGE0_API_URL.includes('rapidapi.com');
+
+// Create axios instance with proper headers
+const judge0Client = axios.create({
+  baseURL: JUDGE0_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    ...(JUDGE0_API_KEY && isRapidAPI && {
+      'X-RapidAPI-Key': JUDGE0_API_KEY,
+      'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+    }),
+    ...(JUDGE0_API_KEY && !isRapidAPI && {
+      'Authorization': `Bearer ${JUDGE0_API_KEY}`
+    })
+  }
+});
 
 // Language IDs for Judge0 - Popular Languages 2025
 export const LANGUAGE_IDS: Record<string, number> = {
@@ -84,21 +110,38 @@ export const submitCode = async (
       submission.expected_output = expectedOutput;
     }
 
+    console.log('📤 Submitting to Judge0:', {
+      url: judge0Client.defaults.baseURL,
+      language,
+      language_id: LANGUAGE_IDS[language],
+      stdin_length: stdin.length,
+      code_length: sourceCode.length
+    });
+
     // Submit and wait for result
-    const response = await axios.post(
-      `${JUDGE0_API_URL}/submissions?base64_encoded=false&wait=true`,
-      submission,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+    const response = await judge0Client.post(
+      '/submissions?base64_encoded=false&wait=true',
+      submission
     );
+
+    console.log('📥 Judge0 Response:', {
+      status: response.data.status.description,
+      time: response.data.time,
+      memory: response.data.memory
+    });
 
     return response.data;
   } catch (error) {
     console.error('Judge0 submission error:', error);
-    throw new Error('Failed to execute code. Make sure Judge0 is running.');
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        throw new Error('Judge0 API authentication failed. Please check your API key.');
+      } else if (error.response?.status === 429) {
+        throw new Error('Judge0 API rate limit exceeded. Please try again later.');
+      }
+      console.error('Error details:', error.response?.data);
+    }
+    throw new Error('Failed to execute code. Please check your Judge0 configuration.');
   }
 };
 
@@ -139,8 +182,8 @@ export const runTestCases = async (
  */
 export const getSubmission = async (token: string): Promise<SubmissionResult> => {
   try {
-    const response = await axios.get(
-      `${JUDGE0_API_URL}/submissions/${token}?base64_encoded=false`
+    const response = await judge0Client.get(
+      `/submissions/${token}?base64_encoded=false`
     );
     return response.data;
   } catch (error) {
@@ -154,7 +197,7 @@ export const getSubmission = async (token: string): Promise<SubmissionResult> =>
  */
 export const checkJudge0Status = async (): Promise<boolean> => {
   try {
-    const response = await axios.get(`${JUDGE0_API_URL}/about`);
+    const response = await judge0Client.get('/about');
     return response.status === 200;
   } catch (error) {
     return false;
