@@ -21,6 +21,11 @@ export interface Problem {
   created_at: string;
   updated_at: string;
   boilerplates: Record<string, string>;
+  wrapper_code: Record<string, string>;
+  function_name: string;
+  function_signature: Record<string, string>;
+  input_parsing: Record<string, string>;
+  output_formatting: Record<string, string>;
 }
 
 export interface CreateProblemData {
@@ -35,6 +40,11 @@ export interface CreateProblemData {
   companies?: string[];
   examples?: ProblemExample[];
   boilerplates?: Record<string, string>;
+  wrapper_code?: Record<string, string>;
+  function_name?: string;
+  function_signature?: Record<string, string>;
+  input_parsing?: Record<string, string>;
+  output_formatting?: Record<string, string>;
 }
 
 /**

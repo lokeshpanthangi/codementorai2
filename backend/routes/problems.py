@@ -33,6 +33,11 @@ class ProblemCreate(BaseModel):
     companies: List[str] = Field(default_factory=list)
     examples: List[ProblemExample] = Field(default_factory=list)
     boilerplates: Dict[str, str] = Field(default_factory=dict)
+    wrapper_code: Dict[str, str] = Field(default_factory=dict)
+    function_name: str = Field(default="solution")
+    function_signature: Dict[str, str] = Field(default_factory=dict)  # Language -> function signature
+    input_parsing: Dict[str, str] = Field(default_factory=dict)  # Language -> input parsing code
+    output_formatting: Dict[str, str] = Field(default_factory=dict)  # Language -> output formatting code
 
 
 class ProblemResponse(BaseModel):
@@ -47,9 +52,14 @@ class ProblemResponse(BaseModel):
     topics: List[str]
     companies: List[str]
     examples: List[ProblemExample]
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     boilerplates: Dict[str, str]
+    wrapper_code: Dict[str, str]
+    function_name: str
+    function_signature: Dict[str, str]
+    input_parsing: Dict[str, str]
+    output_formatting: Dict[str, str]
 
 
 @problem_router.post("/", response_model=ProblemResponse, status_code=status.HTTP_201_CREATED)

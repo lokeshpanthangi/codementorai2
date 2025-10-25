@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { submitCode, runTestCases, checkJudge0Status, STATUS_DESCRIPTIONS } from "@/services/judge0Service";
+import { analyzeCode } from "@/services/aiService";
 import { getProblemBySlug, Problem as ProblemType } from "@/services/problemsService";
 import { getPublicTestCases, getHiddenTestCases, TestCase } from "@/services/testCasesService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,7 +72,10 @@ const Problem = () => {
   const [isAiInsightsPanelVisible, setIsAiInsightsPanelVisible] = useState(false); // Hidden by default
   const [aiInsights, setAiInsights] = useState<{ text: string; timestamp: Date }[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [lastTestFeedback, setLastTestFeedback] = useState<string>('');
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const aiRequestIdRef = useRef(0);
+  const aiInsightsRef = useRef(aiInsights);
   
   // Execution states
   const [isRunning, setIsRunning] = useState(false);
@@ -93,31 +97,136 @@ const Problem = () => {
   
   const [code, setCode] = useState(``);
 
-  // Language templates for different languages (only Python, Java, C++)
+  const buildTestFeedback = useCallback(
+    (
+      results: Array<{
+        passed: boolean;
+        testCase: number;
+        stdout?: string | null;
+        status?: { description: string };
+      }>,
+      metaCases: Array<{ input: string; expected_output: string; is_hidden: boolean }>
+    ): string => {
+      if (!results || results.length === 0) {
+        return 'No tests were executed yet.';
+      }
+
+      const failedIndex = results.findIndex((result) => !result.passed);
+      if (failedIndex === -1) {
+        return `All ${results.length} test cases passed.`;
+      }
+
+      const failingResult = results[failedIndex];
+      const meta = metaCases?.[failedIndex];
+      const status = failingResult.status?.description || 'Wrong Answer';
+      const observed = failingResult.stdout?.trim() || 'no output';
+      const visibility = meta?.is_hidden ? 'hidden' : 'public';
+
+      let summary = `Test case #${failedIndex + 1} (${visibility}) failed. Status: ${status}. Observed output: ${observed}.`;
+
+      if (meta?.is_hidden) {
+        summary += ' Expected output is hidden.';
+      } else if (meta?.expected_output) {
+        summary += ` Expected: ${meta.expected_output}.`;
+      }
+
+      if (meta?.input) {
+        summary += ` Input: ${meta.input}.`;
+      }
+
+      return summary;
+    },
+    []
+  );
+
+  // Language templates for different languages (LeetCode-style boilerplates)
   const getDefaultTemplate = (lang: string): string => {
     const templates: Record<string, string> = {
-      python: `# Write your solution here
-def solution():
-    pass`,
-      java: `// Write your solution here
-class Solution {
-    public void solution() {
-        
+      python: `class Solution:
+    def twoSum(self, nums: List[int], target: int) -> List[int]:
+        # Write your solution here
+        pass`,
+      java: `class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        // Write your solution here
+        return new int[0];
     }
 }`,
-      cpp: `// Write your solution here
-#include <iostream>
-using namespace std;
-
-class Solution {
+      cpp: `class Solution {
 public:
-    void solution() {
-        
+    vector<int> twoSum(vector<int>& nums, int target) {
+        // Write your solution here
+        return {};
     }
 };`,
     };
     return templates[lang] || templates.python;
   };
+
+  const plainProblemDescription = useMemo(() => {
+    if (!problem?.description) return undefined;
+    const withoutTags = problem.description.replace(/<[^>]*>/g, ' ');
+    return withoutTags.replace(/\s+/g, ' ').trim();
+  }, [problem?.description]);
+
+  useEffect(() => {
+    aiInsightsRef.current = aiInsights;
+  }, [aiInsights]);
+
+  const fetchAiHint = useCallback(
+    async (currentCode: string, hintHistory: string[]) => {
+      const trimmedCode = currentCode.trim();
+      if (!isAiInsightsPanelVisible || aiMode !== 'insights' || trimmedCode.length === 0) {
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const requestId = ++aiRequestIdRef.current;
+      setIsAnalyzing(true);
+
+      try {
+        const response = await analyzeCode({
+          user_code: trimmedCode,
+          language,
+          problem_description: plainProblemDescription,
+          test_feedback: lastTestFeedback || undefined,
+          hint_history: hintHistory,
+        });
+
+        if (aiRequestIdRef.current !== requestId) {
+          return;
+        }
+
+        setAiInsights((prev) => {
+          const normalizedHint = response.hint.trim();
+          const timestamp = new Date();
+
+          if (prev.length > 0 && prev[0].text === normalizedHint) {
+            return [{ ...prev[0], timestamp }, ...prev.slice(1)];
+          }
+
+          const next = [{ text: normalizedHint, timestamp }, ...prev];
+          return next.slice(0, 5);
+        });
+      } catch (error: any) {
+        if (aiRequestIdRef.current === requestId) {
+          const message = error?.response?.data?.detail || 'Unable to fetch AI hint right now.';
+          setAiInsights((prev) => [
+            {
+              text: `⚠️ ${message}`,
+              timestamp: new Date(),
+            },
+            ...prev,
+          ].slice(0, 5));
+        }
+      } finally {
+        if (aiRequestIdRef.current === requestId) {
+          setIsAnalyzing(false);
+        }
+      }
+    },
+    [aiMode, isAiInsightsPanelVisible, language, lastTestFeedback, plainProblemDescription]
+  );
 
   // Fetch problem data on mount
   useEffect(() => {
@@ -134,13 +243,11 @@ public:
         const data = await getProblemBySlug(slugParam);
         setProblem(data);
         
-        // Set initial code from boilerplate (default to python)
+        // Initialize with boilerplate code for the default language
         const initialLang = 'python';
-        if (data.boilerplates && data.boilerplates[initialLang]) {
-          setCode(data.boilerplates[initialLang]);
-        } else {
-          setCode(getDefaultTemplate(initialLang));
-        }
+        setLanguage(initialLang);
+        const initialBoilerplate = data.boilerplates?.[initialLang] || getDefaultTemplate(initialLang);
+        setCode(initialBoilerplate);
       } catch (error: any) {
         console.error('Failed to fetch problem:', error);
         setProblemError(error.response?.data?.detail || 'Failed to load problem');
@@ -157,92 +264,60 @@ public:
 
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage);
-    
-    // Use boilerplate from problem data if available, otherwise use default template
-    if (problem?.boilerplates && problem.boilerplates[newLanguage]) {
-      setCode(problem.boilerplates[newLanguage]);
-    } else {
-      setCode(getDefaultTemplate(newLanguage));
-    }
-    
+    // Load boilerplate for the new language
+    const boilerplate = problem?.boilerplates?.[newLanguage] || getDefaultTemplate(newLanguage);
+    setCode(boilerplate);
     setAiInsights([]); // Clear insights when changing language
+    setLastTestFeedback('');
+    setIsAnalyzing(false);
   };
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
-    
-    // Only analyze if in insights mode
-    if (aiMode !== 'insights') return;
-    
-    setIsAnalyzing(true);
-    
-    // Clear existing timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
-    
-    // Set new timer for 2 seconds
-    debounceTimerRef.current = setTimeout(() => {
-      generateAiInsights(newCode);
-      setIsAnalyzing(false);
-    }, 2000);
+
+    if (aiMode === 'insights' && isAiInsightsPanelVisible) {
+      setIsAnalyzing(true);
+    }
   };
 
-  const generateAiInsights = (currentCode: string) => {
-    const insights: string[] = [];
-    
-    // Check for empty solution
-    if (currentCode.includes("# Write your solution here") || currentCode.includes("// Write your solution here")) {
-      insights.push("💡 Start by understanding the problem constraints and edge cases.");
-      insights.push("🎯 Consider the data structure: How will you traverse the linked lists?");
-    } else {
-      // Check for common patterns
-      if (currentCode.includes("while") || currentCode.includes("for")) {
-        insights.push("✅ Good! You're using iteration to traverse the data structure.");
-      }
-      
-      if (currentCode.includes("carry")) {
-        insights.push("✅ Great! You're handling the carry for addition.");
-      } else if (currentCode.length > 100) {
-        insights.push("💭 Tip: Don't forget to handle carry when sum exceeds 9.");
-      }
-      
-      if (currentCode.includes("dummy") || currentCode.includes("Dummy")) {
-        insights.push("✅ Excellent! Using a dummy node simplifies list construction.");
-      }
-      
-      if (currentCode.includes("return") && !currentCode.includes("pass")) {
-        insights.push("✅ You have a return statement. Make sure it returns the correct node.");
-      }
-      
-      // Code complexity hints
-      const lineCount = currentCode.split("\n").length;
-      if (lineCount > 30) {
-        insights.push("💡 Your solution is getting long. Consider if there's a simpler approach.");
-      } else if (lineCount > 10 && lineCount < 30) {
-        insights.push("✨ Your solution looks well-structured!");
-      }
-      
-      // Language-specific tips
-      if (language === "python" && currentCode.includes("def")) {
-        if (!currentCode.includes("self")) {
-          insights.push("⚠️ Make sure you're using 'self' correctly in your method.");
-        }
-      }
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
-    
-    if (insights.length === 0) {
-      insights.push("👀 Keep writing code to get more insights...");
+
+    if (!isAiInsightsPanelVisible || aiMode !== 'insights') {
+      setIsAnalyzing(false);
+      return;
     }
-    
-    // Append new insights to existing ones with timestamps
-    const newInsights = insights.map(text => ({ 
-      text, 
-      timestamp: new Date() 
-    }));
-    
-    setAiInsights(prev => [...newInsights, ...prev]); // New insights at the top
-  };
+
+    const trimmedCode = code.trim();
+    if (!trimmedCode) {
+      setIsAnalyzing(false);
+      return;
+    }
+
+    setIsAnalyzing(true);
+    const historyPayload = aiInsightsRef.current
+      .filter((entry) => entry.text && !entry.text.startsWith('⚠️'))
+      .map((entry) => entry.text)
+      .slice(0, 5);
+
+    debounceTimerRef.current = setTimeout(() => {
+      fetchAiHint(trimmedCode, historyPayload);
+    }, 4000);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
+  }, [code, aiMode, isAiInsightsPanelVisible, fetchAiHint]);
 
   // Chat functionality
   const handleChatMode = () => {
@@ -437,9 +512,36 @@ public:
         expectedOutput: tc.expected_output
       }));
       
+      // Get wrapper code for this language if available
+      const wrapperCode = problem?.wrapper_code?.[language];
+      const functionName = problem?.function_name || 'solution';
+      
       // Run code with all visible test cases
-      const results = await runTestCases(code, language, testCasesForExecution);
+      const results = await runTestCases(
+        code, 
+        language, 
+        testCasesForExecution,
+        undefined,
+        functionName,
+        { 
+          noWrap: false,
+          wrapperTemplate: wrapperCode,
+          functionSignature: problem?.function_signature?.[language] || '',
+          inputParsing: problem?.input_parsing?.[language] || 'args = input_data',
+          outputFormatting: problem?.output_formatting?.[language] || 'formatted_result = str(result)'
+        }
+      );
       setTestResults(results);
+
+      const metaCases = visibleTestCases.map((tc) => ({
+        input: tc.input,
+        expected_output: tc.expected_output,
+        is_hidden: false,
+      }));
+      setLastTestFeedback(buildTestFeedback(results, metaCases));
+      if (isAiInsightsPanelVisible && aiMode === 'insights' && code.trim()) {
+        setIsAnalyzing(true);
+      }
 
       const passedCount = results.filter(r => r.passed).length;
       const totalCount = results.length;
@@ -458,6 +560,8 @@ public:
         description: error.message
       });
       setTestResults([]);
+      setLastTestFeedback('Execution failed due to an unexpected error.');
+      setIsAnalyzing(false);
     } finally {
       setIsRunning(false);
     }
@@ -486,7 +590,27 @@ public:
         expectedOutput: tc.expected_output
       }));
 
-      const results = await runTestCases(code, language, testCasesForExecution);
+      // Get wrapper configuration from problem data
+      const wrapperCode = problem?.wrapper_code?.[language];
+      const functionName = problem?.function_name || 'solution';
+      const functionSignature = problem?.function_signature?.[language] || '';
+      const inputParsing = problem?.input_parsing?.[language] || 'args = input_data';
+      const outputFormatting = problem?.output_formatting?.[language] || 'formatted_result = str(result)';
+
+      const results = await runTestCases(
+        code, 
+        language, 
+        testCasesForExecution,
+        undefined,
+        functionName,
+        { 
+          noWrap: false,
+          wrapperTemplate: wrapperCode,
+          functionSignature,
+          inputParsing,
+          outputFormatting
+        }
+      );
 
       const enrichedResults = results.map((result, index) => ({
         ...result,
@@ -497,6 +621,16 @@ public:
 
       // Update bottom panel with latest visible case results
       setTestResults(enrichedResults.slice(0, visibleTestCases.length));
+
+      const submissionMetaCases = allTestCases.map((tc) => ({
+        input: tc.input,
+        expected_output: tc.expected_output,
+        is_hidden: !!tc.is_hidden,
+      }));
+      setLastTestFeedback(buildTestFeedback(enrichedResults, submissionMetaCases));
+      if (isAiInsightsPanelVisible && aiMode === 'insights' && code.trim()) {
+        setIsAnalyzing(true);
+      }
 
       const passedCount = enrichedResults.filter(r => r.passed).length;
       const totalCount = enrichedResults.length;
@@ -531,6 +665,8 @@ public:
       toast.error("Submission failed", {
         description: error.message
       });
+      setLastTestFeedback('Submission failed due to an unexpected error.');
+      setIsAnalyzing(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -934,11 +1070,8 @@ public:
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
-                        if (problem?.boilerplates && problem.boilerplates[language]) {
-                          setCode(problem.boilerplates[language]);
-                        } else {
-                          setCode(getDefaultTemplate(language));
-                        }
+                        // Reset to empty editor (no boilerplate)
+                        setCode('');
                       }}
                     >
                       <Undo2 className="h-4 w-4" />

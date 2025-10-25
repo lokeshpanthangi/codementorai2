@@ -26,6 +26,11 @@ def _serialize_problem(problem: Optional[Dict[str, Any]]) -> Optional[Dict[str, 
         "created_at": problem.get("created_at"),
         "updated_at": problem.get("updated_at"),
         "boilerplates": problem.get("boilerplates", {}),
+        "wrapper_code": problem.get("wrapper_code", {}),
+        "function_name": problem.get("function_name", "solution"),
+        "function_signature": problem.get("function_signature", {}),
+        "input_parsing": problem.get("input_parsing", {}),
+        "output_formatting": problem.get("output_formatting", {}),
     }
 
 
@@ -47,6 +52,11 @@ async def create_problem(
     companies: Optional[List[str]] = None,
     examples: Optional[List[Dict[str, Any]]] = None,
     boilerplates: Optional[Dict[str, str]] = None,
+    wrapper_code: Optional[Dict[str, str]] = None,
+    function_name: Optional[str] = None,
+    function_signature: Optional[Dict[str, str]] = None,
+    input_parsing: Optional[Dict[str, str]] = None,
+    output_formatting: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     now = datetime.utcnow()
 
@@ -62,6 +72,11 @@ async def create_problem(
         "companies": companies or [],
         "examples": examples or [],
         "boilerplates": boilerplates or {},
+        "wrapper_code": wrapper_code or {},
+        "function_name": function_name or "solution",
+        "function_signature": function_signature or {},
+        "input_parsing": input_parsing or {},
+        "output_formatting": output_formatting or {},
         "created_at": now,
         "updated_at": now,
     }

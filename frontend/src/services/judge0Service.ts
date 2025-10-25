@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { wrapUserCode, DEFAULT_WRAPPERS, needsWrapper } from './codeWrapperService';
 
 // Judge0 API Configuration - Get from environment variables
 const JUDGE0_API_URL = import.meta.env.VITE_JUDGE0_URL || 'http://localhost:2358';
@@ -90,16 +91,62 @@ export interface CodeSubmission {
 
 /**
  * Submit code for execution
+ * @param sourceCode - User's code (function implementation only)
+ * @param language - Programming language
+ * @param stdin - Standard input for the program
+ * @param expectedOutput - Expected output (optional)
+ * @param wrapperTemplate - Wrapper code template to wrap user's code (optional)
+ * @param functionName - Name of the function to call (default: 'solution')
+ * @param options - Additional options including wrapper configuration
  */
 export const submitCode = async (
   sourceCode: string,
   language: string,
   stdin: string = '',
-  expectedOutput?: string
+  expectedOutput?: string,
+  wrapperTemplate?: string,
+  functionName: string = 'solution',
+  options?: { 
+    noWrap?: boolean;
+    functionSignature?: string;
+    inputParsing?: string;
+    outputFormatting?: string;
+  }
 ): Promise<SubmissionResult> => {
   try {
+    // Decide whether to wrap code or run as-is
+    const noWrap = options?.noWrap === true;
+    let finalCode = sourceCode;
+    
+    if (!noWrap && wrapperTemplate && wrapperTemplate.trim() !== '') {
+      // Use problem-specific wrapper
+      finalCode = wrapUserCode({
+        userCode: sourceCode,
+        wrapperTemplate: wrapperTemplate,
+        functionName: functionName,
+        functionSignature: options?.functionSignature,
+        inputParsing: options?.inputParsing,
+        outputFormatting: options?.outputFormatting
+      }, language);
+      console.log('🔄 Using problem-specific wrapper code');
+    } else if (!noWrap && needsWrapper(sourceCode, language)) {
+      // Use default wrapper if needed
+      const defaultWrapper = DEFAULT_WRAPPERS[language];
+      if (defaultWrapper) {
+        finalCode = wrapUserCode({
+          userCode: sourceCode,
+          wrapperTemplate: defaultWrapper,
+          functionName: functionName,
+          functionSignature: options?.functionSignature,
+          inputParsing: options?.inputParsing,
+          outputFormatting: options?.outputFormatting
+        }, language);
+        console.log('🔄 Using default wrapper code for', language);
+      }
+    }
+
     const submission: CodeSubmission = {
-      source_code: sourceCode,
+      source_code: finalCode,
       language_id: LANGUAGE_IDS[language],
       stdin: stdin,
       cpu_time_limit: 2, // 2 seconds
@@ -115,7 +162,8 @@ export const submitCode = async (
       language,
       language_id: LANGUAGE_IDS[language],
       stdin_length: stdin.length,
-      code_length: sourceCode.length
+      code_length: finalCode.length,
+      wrapped: finalCode !== sourceCode
     });
 
     // Submit and wait for result
@@ -147,11 +195,26 @@ export const submitCode = async (
 
 /**
  * Run code with test cases
+ * @param sourceCode - User's code
+ * @param language - Programming language
+ * @param testCases - Array of test cases with input and expected output
+ * @param wrapperTemplate - Wrapper code template (optional)
+ * @param functionName - Function name (optional)
+ * @param options - Additional options including wrapper configuration
  */
 export const runTestCases = async (
   sourceCode: string,
   language: string,
-  testCases: Array<{ input: string; expectedOutput: string }>
+  testCases: Array<{ input: string; expectedOutput: string }>,
+  wrapperTemplate?: string,
+  functionName: string = 'solution',
+  options?: { 
+    noWrap?: boolean;
+    wrapperTemplate?: string;
+    functionSignature?: string;
+    inputParsing?: string;
+    outputFormatting?: string;
+  }
 ): Promise<Array<SubmissionResult & { passed: boolean; testCase: number }>> => {
   const results = await Promise.all(
     testCases.map(async (testCase, index) => {
@@ -159,7 +222,15 @@ export const runTestCases = async (
         sourceCode,
         language,
         testCase.input,
-        testCase.expectedOutput
+        testCase.expectedOutput,
+        options?.wrapperTemplate || wrapperTemplate,
+        functionName,
+        {
+          noWrap: options?.noWrap,
+          functionSignature: options?.functionSignature,
+          inputParsing: options?.inputParsing,
+          outputFormatting: options?.outputFormatting
+        }
       );
 
       // Check if test passed
