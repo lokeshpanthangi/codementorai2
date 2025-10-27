@@ -12,3 +12,7 @@ langchain-openai==0.1.8
 python-multipart==0.0.9
 email-validator==2.2.0
 requests==2.32.3
+livekit-agents
+livekit-plugins-openai
+livekit-plugins-deepgram
+livekit-plugins-silero

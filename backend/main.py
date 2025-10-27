@@ -12,6 +12,7 @@ from routes.submissions import submissions_router
 from routes.test_cases import test_case_router
 from routes.users import user_router
 from routes.ai import ai_router
+from routes.voice_agent_api import voice_agent_router
 
 
 app = FastAPI(title="CodeMentor API", version="1.0.0")
@@ -45,6 +46,7 @@ app.include_router(problem_router)
 app.include_router(test_case_router)
 app.include_router(submissions_router)
 app.include_router(ai_router)
+app.include_router(voice_agent_router)
 
 
 @app.on_event("startup")

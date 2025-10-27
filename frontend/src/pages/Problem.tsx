@@ -35,6 +35,7 @@ import { analyzeCode } from "@/services/aiService";
 import { getProblemBySlug, getQuestionBySlug, Problem as ProblemType, Question as QuestionType } from "@/services/problemsService";
 import { getPublicTestCases, getHiddenTestCases, TestCase, convertTestCaseToInput, getExpectedOutput } from "@/services/testCasesService";
 import { createSubmission } from "@/services/submissionsService";
+import { analyzeCodeWithVoiceAgent, voiceSpeechService, VoiceAgentRequest } from "@/services/voiceAgentService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -95,6 +96,8 @@ const Problem = () => {
   const [chatInput, setChatInput] = useState('');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [isVoiceProcessing, setIsVoiceProcessing] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const editorRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   
@@ -142,28 +145,29 @@ const Problem = () => {
     []
   );
 
-  // Language templates for different languages (LeetCode-style boilerplates)
-  const getDefaultTemplate = (lang: string): string => {
-    const templates: Record<string, string> = {
-      python: `class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        # Write your solution here
-        pass`,
-      java: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // Write your solution here
-        return new int[0];
+  // Get boilerplate code from problem data (Python only)
+  const getBoilerplateCode = (problem: QuestionType | null, lang: string = 'python'): string => {
+    if (!problem?.boilerplates || problem.boilerplates.length === 0) {
+      return `# No boilerplate available for this problem
+# Please write your solution here
+pass`;
     }
-}`,
-      cpp: `class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        // Write your solution here
-        return {};
+
+    // Filter for Python boilerplates only (language_name should be 'python' or 'python3')
+    const pythonBoilerplate = problem.boilerplates.find(b => 
+      b.language_name === 'python' || 
+      b.language_name === 'python3' ||
+      b.language_name.toLowerCase().includes('python')
+    );
+
+    if (pythonBoilerplate) {
+      return pythonBoilerplate.code;
     }
-};`,
-    };
-    return templates[lang] || templates.python;
+
+    // Fallback if no Python boilerplate found
+    return `# No Python boilerplate available for this problem
+# Please write your solution here
+pass`;
   };
 
   const plainProblemDescription = useMemo(() => {
@@ -246,11 +250,11 @@ public:
         const data = await getQuestionBySlug(slugParam);
         setProblem(data);
         
-        // Initialize with boilerplate code for the default language
+        // Initialize with boilerplate code for Python only
         const initialLang = 'python';
         setLanguage(initialLang);
-        // Find boilerplate for the language
-        const boilerplate = data.boilerplates?.find(b => b.language_name === initialLang)?.code || getDefaultTemplate(initialLang);
+        // Get boilerplate from the problem data
+        const boilerplate = getBoilerplateCode(data, initialLang);
         setCode(boilerplate);
       } catch (error: any) {
         console.error('Failed to fetch problem:', error);
@@ -267,9 +271,17 @@ public:
   }, [slugParam]);
 
   const handleLanguageChange = (newLanguage: string) => {
+    // Only allow Python language
+    if (newLanguage !== 'python') {
+      toast.info('Language Restriction', {
+        description: 'Currently only Python is supported for this problem.'
+      });
+      return;
+    }
+    
     setLanguage(newLanguage);
-    // Load boilerplate for the new language
-    const boilerplate = problem?.boilerplates?.find(b => b.language_name === newLanguage)?.code || getDefaultTemplate(newLanguage);
+    // Load boilerplate for Python from problem data
+    const boilerplate = getBoilerplateCode(problem, newLanguage);
     setCode(boilerplate);
     setAiInsights([]); // Clear insights when changing language
     setLastTestFeedback('');
@@ -370,24 +382,94 @@ public:
   };
 
   const handleVoiceMode = () => {
+    if (!voiceSpeechService.isSupported()) {
+      toast.error("Voice recognition not supported in this browser. Please use Chrome, Edge, or Safari.");
+      return;
+    }
+
+    if (!voiceSpeechService.isSecureContext()) {
+      toast.error("Voice recognition requires HTTPS or localhost. Please use a secure connection.");
+      return;
+    }
+
     setAiMode('voice');
     setIsAiInsightsPanelVisible(true);
     setIsVoiceActive(true);
     setVoiceTranscript('Listening...');
+    setVoiceError(null);
     
-    // Simulate voice recognition
-    setTimeout(() => {
-      setVoiceTranscript('You said: "How do I handle the carry in addition?"');
-      setTimeout(() => {
-        setVoiceTranscript('AI: To handle the carry, create a variable to store it and add it to the next pair of digits. Update the carry for each iteration.');
-      }, 2000);
-    }, 2000);
+    // Start voice recognition
+    const success = voiceSpeechService.startListening(
+      (transcript) => {
+        setVoiceTranscript(transcript);
+        if (transcript.trim()) {
+          handleVoiceInput(transcript.trim());
+        }
+      },
+      (error) => {
+        setVoiceError(error);
+        setIsVoiceActive(false);
+        toast.error("Voice recognition error: " + error);
+      }
+    );
+
+    if (!success) {
+      setIsVoiceActive(false);
+      toast.error("Failed to start voice recognition. Please check your microphone permissions.");
+    }
+  };
+
+  const handleVoiceInput = async (transcript: string) => {
+    if (!user || !problem) return;
+
+    setIsVoiceProcessing(true);
+    setVoiceTranscript(`You said: "${transcript}"\n\nProcessing...`);
+
+    try {
+      const request: VoiceAgentRequest = {
+        user_id: user.id,
+        problem_id: problem._id,
+        code: code,
+        action: 'analyze_code',
+        message: transcript
+      };
+
+      const response = await analyzeCodeWithVoiceAgent(request);
+      
+      // Extract the response text from the backend format
+      const responseText = response.data?.feedback || response.message || "Analysis completed.";
+      
+      // Display the AI response
+      setVoiceTranscript(`You said: "${transcript}"\n\nAI Assistant: ${responseText}`);
+      
+      // Speak the response
+      voiceSpeechService.speak(responseText, () => {
+        // Continue listening after speaking
+        if (isVoiceActive) {
+          setVoiceTranscript('Listening...');
+        }
+      });
+
+    } catch (error) {
+      console.error('Voice agent error:', error);
+      const errorMessage = "Sorry, I couldn't process your request. Please try again.";
+      setVoiceTranscript(`You said: "${transcript}"\n\nError: ${errorMessage}`);
+      voiceSpeechService.speak(errorMessage);
+    } finally {
+      setIsVoiceProcessing(false);
+    }
   };
 
   const handleStopVoice = () => {
     setIsVoiceActive(false);
     setVoiceTranscript('');
+    setVoiceError(null);
+    setIsVoiceProcessing(false);
     setAiMode('insights');
+    
+    // Stop voice services
+    voiceSpeechService.stopListening();
+    voiceSpeechService.stopSpeaking();
   };
 
   const handleBackToInsights = () => {
@@ -1059,8 +1141,6 @@ public:
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border z-50 max-h-[300px]">
                         <SelectItem value="python">🐍 Python 3</SelectItem>
-                        <SelectItem value="java">☕ Java</SelectItem>
-                        <SelectItem value="cpp">⚙️ C++</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1521,11 +1601,21 @@ public:
                       <div>
                         <p className="text-sm font-medium mb-2">
                           {isVoiceActive ? 'Voice Assistant Active' : 'Voice Assistant Stopped'}
+                          {isVoiceProcessing && (
+                            <span className="ml-2">
+                              <Loader2 className="h-4 w-4 animate-spin inline" />
+                            </span>
+                          )}
                         </p>
                         {voiceTranscript && (
-                          <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg max-h-40 overflow-y-auto custom-scrollbar">
-                            {voiceTranscript}
-                          </p>
+                          <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg max-h-40 overflow-y-auto custom-scrollbar">
+                            <pre className="whitespace-pre-wrap font-sans">{voiceTranscript}</pre>
+                          </div>
+                        )}
+                        {voiceError && (
+                          <div className="text-sm text-red-500 bg-red-50 p-3 rounded-lg mt-2">
+                            Error: {voiceError}
+                          </div>
                         )}
                       </div>
 
@@ -1535,6 +1625,7 @@ public:
                           size="sm"
                           onClick={handleStopVoice}
                           className="mt-4"
+                          disabled={isVoiceProcessing}
                         >
                           <MicOff className="h-4 w-4 mr-2" />
                           Stop Voice Assistant
@@ -1549,6 +1640,24 @@ public:
                           <Mic className="h-4 w-4 mr-2" />
                           Start Voice Assistant
                         </Button>
+                      )}
+                      
+                      {!voiceSpeechService.isSupported() && (
+                        <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2">
+                          Voice recognition is not supported in this browser. Please use Chrome, Edge, or Safari.
+                        </p>
+                      )}
+                      
+                      {voiceSpeechService.isSupported() && !voiceSpeechService.isSecureContext() && (
+                        <p className="text-xs text-yellow-600 bg-yellow-50 p-2 rounded mt-2">
+                          Voice recognition requires HTTPS or localhost for security. Please use a secure connection.
+                        </p>
+                      )}
+                      
+                      {voiceSpeechService.isSupported() && voiceSpeechService.isSecureContext() && (
+                        <p className="text-xs text-green-600 bg-green-50 p-2 rounded mt-2">
+                          {voiceSpeechService.getSetupInstructions()}
+                        </p>
                       )}
                     </div>
                   </div>
