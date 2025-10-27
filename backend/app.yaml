@@ -1,0 +1,13 @@
+runtime: python311
+service: default
+entrypoint: gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app
+
+env_variables:
+  MONGO_URL: "mongodb+srv://nani:Q2hszywkvb@cluster0.nkdfumb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+  DATABASE_NAME: "codementor"
+  OPENAI_API_KEY: "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"
+  LIVEKIT_URL: "wss://slack-ai-e59s5qtm.livekit.cloud"
+  LIVEKIT_API_KEY: "APIm7AcaWpPdrQz"
+  LIVEKIT_API_SECRET: "D50VI6UY8dCzlnVuif1sMYJp9eNkCOjMeMa0d5zkqEQA"
+  DEEPGRAM_API_KEY: "90fca8dafe48bedab323c3f41d716ecc7c656d4f"
+  LLM_CHOICE: "gpt-4o"

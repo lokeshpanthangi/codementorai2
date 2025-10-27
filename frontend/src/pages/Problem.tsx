@@ -35,7 +35,7 @@ import { analyzeCode } from "@/services/aiService";
 import { getProblemBySlug, getQuestionBySlug, Problem as ProblemType, Question as QuestionType } from "@/services/problemsService";
 import { getPublicTestCases, getHiddenTestCases, TestCase, convertTestCaseToInput, getExpectedOutput } from "@/services/testCasesService";
 import { createSubmission } from "@/services/submissionsService";
-import { analyzeCodeWithVoiceAgent, voiceSpeechService, VoiceAgentRequest } from "@/services/voiceAgentService";
+import { analyzeCodeWithVoiceAgent, voiceSpeechService, VoiceAgentRequest, chatHistoryManager } from "@/services/voiceAgentService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -1586,79 +1586,117 @@ pass`;
                 )}
 
                 {aiMode === 'voice' && (
-                  <div className="h-full w-full p-6 flex flex-col items-center justify-center overflow-y-auto custom-scrollbar">
-                    <div className="text-center space-y-4">
-                      <div className={`h-20 w-20 rounded-full flex items-center justify-center mx-auto ${
-                        isVoiceActive ? 'bg-primary/20 animate-pulse' : 'bg-muted'
-                      }`}>
-                        {isVoiceActive ? (
-                          <Mic className="h-10 w-10 text-primary" />
-                        ) : (
-                          <MicOff className="h-10 w-10 text-muted-foreground" />
-                        )}
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium mb-2">
-                          {isVoiceActive ? 'Voice Assistant Active' : 'Voice Assistant Stopped'}
-                          {isVoiceProcessing && (
-                            <span className="ml-2">
-                              <Loader2 className="h-4 w-4 animate-spin inline" />
-                            </span>
-                          )}
-                        </p>
-                        {voiceTranscript && (
-                          <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg max-h-40 overflow-y-auto custom-scrollbar">
-                            <pre className="whitespace-pre-wrap font-sans">{voiceTranscript}</pre>
+                  <div className="h-full w-full flex flex-col">
+                    {/* Voice Chat History */}
+                    <div className="flex-1 p-3 custom-scrollbar overflow-y-auto scroll-smooth" style={{ height: "calc(100vh - 250px)" }}>
+                      <div className="space-y-3">
+                        {chatHistoryManager.getRecentHistory().map((msg, index) => (
+                          <div 
+                            key={index}
+                            className={`p-3 rounded-lg ${
+                              msg.role === 'user' 
+                                ? 'bg-primary/10 border border-primary/20 ml-4' 
+                                : 'bg-muted/50 border border-border mr-4'
+                            }`}
+                          >
+                            <p className="text-sm">{msg.content}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit'
+                              }) : 'Now'}
+                            </p>
+                          </div>
+                        ))}
+                        {chatHistoryManager.getRecentHistory().length === 0 && (
+                          <div className="flex flex-col items-center justify-center h-32 text-center">
+                            <Mic className="h-8 w-8 text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground text-sm">
+                              Start a voice conversation
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Your conversation history will appear here
+                            </p>
                           </div>
                         )}
-                        {voiceError && (
-                          <div className="text-sm text-red-500 bg-red-50 p-3 rounded-lg mt-2">
-                            Error: {voiceError}
-                          </div>
-                        )}
                       </div>
+                    </div>
 
-                      {isVoiceActive ? (
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={handleStopVoice}
-                          className="mt-4"
-                          disabled={isVoiceProcessing}
-                        >
-                          <MicOff className="h-4 w-4 mr-2" />
-                          Stop Voice Assistant
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="default" 
-                          size="sm"
-                          onClick={handleVoiceMode}
-                          className="mt-4"
-                        >
-                          <Mic className="h-4 w-4 mr-2" />
-                          Start Voice Assistant
-                        </Button>
-                      )}
-                      
-                      {!voiceSpeechService.isSupported() && (
-                        <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2">
-                          Voice recognition is not supported in this browser. Please use Chrome, Edge, or Safari.
-                        </p>
-                      )}
-                      
-                      {voiceSpeechService.isSupported() && !voiceSpeechService.isSecureContext() && (
-                        <p className="text-xs text-yellow-600 bg-yellow-50 p-2 rounded mt-2">
-                          Voice recognition requires HTTPS or localhost for security. Please use a secure connection.
-                        </p>
-                      )}
-                      
-                      {voiceSpeechService.isSupported() && voiceSpeechService.isSecureContext() && (
-                        <p className="text-xs text-green-600 bg-green-50 p-2 rounded mt-2">
-                          {voiceSpeechService.getSetupInstructions()}
-                        </p>
-                      )}
+                    {/* Voice Controls */}
+                    <div className="p-4 border-t border-border shrink-0">
+                      <div className="text-center space-y-4">
+                        <div className={`h-16 w-16 rounded-full flex items-center justify-center mx-auto ${
+                          isVoiceActive ? 'bg-primary/20 animate-pulse' : 'bg-muted'
+                        }`}>
+                          {isVoiceActive ? (
+                            <Mic className="h-8 w-8 text-primary" />
+                          ) : (
+                            <MicOff className="h-8 w-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium mb-2">
+                            {isVoiceActive ? 'Voice Assistant Active' : 'Voice Assistant Stopped'}
+                            {isVoiceProcessing && (
+                              <span className="ml-2">
+                                <Loader2 className="h-4 w-4 animate-spin inline" />
+                              </span>
+                            )}
+                          </p>
+                          {voiceTranscript && (
+                            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg max-h-20 overflow-y-auto custom-scrollbar">
+                              <pre className="whitespace-pre-wrap font-sans">{voiceTranscript}</pre>
+                            </div>
+                          )}
+                          {voiceError && (
+                            <div className="text-sm text-red-500 bg-red-50 p-3 rounded-lg mt-2">
+                              Error: {voiceError}
+                            </div>
+                          )}
+                        </div>
+
+                        {isVoiceActive ? (
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={handleStopVoice}
+                            className="mt-4"
+                            disabled={isVoiceProcessing}
+                          >
+                            <MicOff className="h-4 w-4 mr-2" />
+                            Stop Voice Assistant
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={handleVoiceMode}
+                            className="mt-4"
+                          >
+                            <Mic className="h-4 w-4 mr-2" />
+                            Start Voice Assistant
+                          </Button>
+                        )}
+                        
+                        {!voiceSpeechService.isSupported() && (
+                          <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2">
+                            Voice recognition is not supported in this browser. Please use Chrome, Edge, or Safari.
+                          </p>
+                        )}
+                        
+                        {voiceSpeechService.isSupported() && !voiceSpeechService.isSecureContext() && (
+                          <p className="text-xs text-yellow-600 bg-yellow-50 p-2 rounded mt-2">
+                            Voice recognition requires HTTPS or localhost for security. Please use a secure connection.
+                          </p>
+                        )}
+                        
+                        {voiceSpeechService.isSupported() && voiceSpeechService.isSecureContext() && (
+                          <p className="text-xs text-green-600 bg-green-50 p-2 rounded mt-2">
+                            {voiceSpeechService.getSetupInstructions()}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

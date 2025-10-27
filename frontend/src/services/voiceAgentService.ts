@@ -1,11 +1,18 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: Date;
+}
+
 export interface VoiceAgentRequest {
   user_id: string;
   problem_id?: string;
   code?: string;
   action: string;
   message?: string;
+  chat_history?: ChatMessage[];
 }
 
 export interface VoiceAgentResponse {
@@ -28,6 +35,41 @@ export interface VoiceAgentStatus {
   last_interaction?: string;
 }
 
+// Chat history management
+class ChatHistoryManager {
+  private history: ChatMessage[] = [];
+  private maxHistoryLength = 10; // Keep last 10 messages
+
+  addMessage(role: 'user' | 'assistant', content: string): void {
+    const message: ChatMessage = {
+      role,
+      content,
+      timestamp: new Date()
+    };
+    
+    this.history.push(message);
+    
+    // Keep only the most recent messages
+    if (this.history.length > this.maxHistoryLength) {
+      this.history = this.history.slice(-this.maxHistoryLength);
+    }
+  }
+
+  getHistory(): ChatMessage[] {
+    return [...this.history]; // Return a copy
+  }
+
+  clearHistory(): void {
+    this.history = [];
+  }
+
+  getRecentHistory(count: number = 6): ChatMessage[] {
+    return this.history.slice(-count);
+  }
+}
+
+export const chatHistoryManager = new ChatHistoryManager();
+
 // Voice Agent API Service
 export const analyzeCodeWithVoiceAgent = async (request: VoiceAgentRequest): Promise<VoiceAgentResponse> => {
   try {
@@ -37,8 +79,19 @@ export const analyzeCodeWithVoiceAgent = async (request: VoiceAgentRequest): Pro
       throw new Error('Authentication required. Please log in.');
     }
 
+    // Add chat history to the request
+    const requestWithHistory = {
+      ...request,
+      chat_history: chatHistoryManager.getRecentHistory()
+    };
+
+    // Add user message to chat history if provided
+    if (request.message) {
+      chatHistoryManager.addMessage('user', request.message);
+    }
+
     // Log the request payload for debugging
-    console.log('Voice Agent Request Payload:', JSON.stringify(request, null, 2));
+    console.log('Voice Agent Request Payload:', JSON.stringify(requestWithHistory, null, 2));
 
     const response = await fetch(`${API_BASE_URL}/voice-agent/analyze`, {
       method: 'POST',
@@ -46,7 +99,7 @@ export const analyzeCodeWithVoiceAgent = async (request: VoiceAgentRequest): Pro
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(request),
+      body: JSON.stringify(requestWithHistory),
     });
 
     console.log('Voice Agent Response Status:', response.status);
@@ -67,6 +120,12 @@ export const analyzeCodeWithVoiceAgent = async (request: VoiceAgentRequest): Pro
 
     const data = await response.json();
     console.log('Voice Agent Success Response:', data);
+    
+    // Add assistant response to chat history
+    if (data.success && data.data?.feedback) {
+      chatHistoryManager.addMessage('assistant', data.data.feedback);
+    }
+    
     return data;
   } catch (error) {
     console.error('Error analyzing code with voice agent:', error);
@@ -100,12 +159,24 @@ export const getUserSubmissionsForVoiceAgent = async (userId: string, problemId?
   }
 };
 
-export const getUserSubmissions = async (userId: string): Promise<VoiceAgentResponse> => {
+export const getUserSubmissions = async (userId: string, message?: string): Promise<VoiceAgentResponse> => {
   try {
     const token = localStorage.getItem('access_token');
     
     if (!token) {
       throw new Error('Authentication required. Please log in.');
+    }
+
+    const requestPayload = {
+      user_id: userId,
+      action: 'get_submissions',
+      message: message || 'Tell me about my submissions',
+      chat_history: chatHistoryManager.getRecentHistory()
+    };
+
+    // Add user message to chat history if provided
+    if (message) {
+      chatHistoryManager.addMessage('user', message);
     }
 
     const response = await fetch(`${API_BASE_URL}/voice-agent/submissions`, {
@@ -114,10 +185,7 @@ export const getUserSubmissions = async (userId: string): Promise<VoiceAgentResp
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        user_id: userId,
-        action: 'get_submissions'
-      }),
+      body: JSON.stringify(requestPayload),
     });
 
     if (!response.ok) {
@@ -129,19 +197,39 @@ export const getUserSubmissions = async (userId: string): Promise<VoiceAgentResp
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Add assistant response to chat history
+    if (data.success && data.data?.feedback) {
+      chatHistoryManager.addMessage('assistant', data.data.feedback);
+    }
+    
+    return data;
   } catch (error) {
     console.error('Error getting user submissions:', error);
     throw error;
   }
 };
 
-export const getProblemDetailsForVoiceAgent = async (problemId: string): Promise<VoiceAgentResponse> => {
+export const getProblemDetailsForVoiceAgent = async (problemId: string, message?: string): Promise<VoiceAgentResponse> => {
   try {
     const token = localStorage.getItem('access_token');
     
     if (!token) {
       throw new Error('Authentication required. Please log in.');
+    }
+
+    const requestPayload = {
+      user_id: 'current_user', // This should be replaced with actual user ID
+      problem_id: problemId,
+      action: 'get_problem',
+      message: message || 'Tell me about this problem',
+      chat_history: chatHistoryManager.getRecentHistory()
+    };
+
+    // Add user message to chat history if provided
+    if (message) {
+      chatHistoryManager.addMessage('user', message);
     }
 
     const response = await fetch(`${API_BASE_URL}/voice-agent/problem`, {
@@ -150,10 +238,7 @@ export const getProblemDetailsForVoiceAgent = async (problemId: string): Promise
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        problem_id: problemId,
-        action: 'get_problem'
-      }),
+      body: JSON.stringify(requestPayload),
     });
 
     if (!response.ok) {
@@ -165,7 +250,14 @@ export const getProblemDetailsForVoiceAgent = async (problemId: string): Promise
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Add assistant response to chat history
+    if (data.success && data.data?.feedback) {
+      chatHistoryManager.addMessage('assistant', data.data.feedback);
+    }
+    
+    return data;
   } catch (error) {
     console.error('Error getting problem details:', error);
     throw error;

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import logging
 import asyncio
 import os
@@ -21,12 +21,19 @@ voice_agent_router = APIRouter(
 )
 
 
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+    timestamp: Optional[datetime] = None
+
+
 class VoiceAgentRequest(BaseModel):
     user_id: str
     problem_id: Optional[str] = None
     code: Optional[str] = None
     action: str  # "analyze_code", "get_submissions", "get_problem", "set_context"
     message: Optional[str] = None  # Voice transcript or additional context
+    chat_history: Optional[List[ChatMessage]] = None  # Previous conversation context
 
 
 class VoiceAgentResponse(BaseModel):
@@ -60,10 +67,19 @@ async def analyze_code_endpoint(
         # Use voice-specific AI service for intelligent responses
         voice_message = request.message or "Please analyze my code"
         
+        # Convert chat history to dict format for the AI service
+        chat_history_dict = None
+        if request.chat_history:
+            chat_history_dict = [
+                {"role": msg.role, "content": msg.content}
+                for msg in request.chat_history
+            ]
+        
         try:
             ai_feedback = await generate_voice_response(
                 action=request.action,
                 voice_message=voice_message,
+                chat_history=chat_history_dict,
                 code=request.code or "",
                 language="python",  # Could be enhanced to detect language
                 problem_description=problem_description
@@ -159,10 +175,20 @@ async def get_user_submissions_endpoint(
         
         # Generate AI insights about submissions
         voice_message = request.message or "Tell me about my submissions"
+        
+        # Convert chat history to dict format for the AI service
+        chat_history_dict = None
+        if request.chat_history:
+            chat_history_dict = [
+                {"role": msg.role, "content": msg.content}
+                for msg in request.chat_history
+            ]
+        
         try:
             ai_insights = await generate_voice_response(
                 action="get_submissions",
                 voice_message=voice_message,
+                chat_history=chat_history_dict,
                 submissions=recent_submissions
             )
         except:
@@ -226,10 +252,20 @@ async def get_problem_details_endpoint(
         
         # Generate AI-powered problem explanation
         voice_message = request.message or "Tell me about this problem"
+        
+        # Convert chat history to dict format for the AI service
+        chat_history_dict = None
+        if request.chat_history:
+            chat_history_dict = [
+                {"role": msg.role, "content": msg.content}
+                for msg in request.chat_history
+            ]
+        
         try:
             ai_explanation = await generate_voice_response(
                 action="get_problem",
                 voice_message=voice_message,
+                chat_history=chat_history_dict,
                 problem_data=problem_data
             )
         except:

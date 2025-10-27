@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -20,18 +20,22 @@ _CODE_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
     Analyze the user's code and provide helpful, conversational feedback.
     Be encouraging and specific about what you observe.
     Keep responses natural and suitable for voice interaction (2-3 sentences max).
-    Focus on practical insights the user can act on immediately."""),
+    Focus on practical insights the user can act on immediately.
+    
+    If there's previous conversation context, reference it naturally to maintain continuity."""),
     ("human", """
 User's voice request: {voice_message}
 
 Problem context: {problem_description}
+
+{chat_history_context}
 
 Code to analyze:
 ```{language}
 {code}
 ```
 
-Provide a helpful, conversational analysis that addresses their voice request.
+Provide a helpful, conversational analysis that addresses their voice request and maintains conversation flow.
 """)
 ])
 
@@ -39,27 +43,35 @@ _GENERAL_ASSISTANCE_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are a helpful programming assistant providing voice support.
     Respond naturally and conversationally to the user's request.
     Keep responses concise and actionable (2-3 sentences max).
-    Be encouraging and supportive."""),
+    Be encouraging and supportive.
+    
+    If there's previous conversation context, reference it naturally to maintain continuity."""),
     ("human", """
 User's voice request: {voice_message}
 
 Context: {context}
 
-Provide a helpful response to their request.
+{chat_history_context}
+
+Provide a helpful response to their request that maintains conversation flow.
 """)
 ])
 
 _SUBMISSION_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a programming mentor reviewing submission history.
+    ("system", """You are an encouraging programming mentor analyzing submission history.
     Provide encouraging insights about the user's progress and patterns.
-    Keep responses conversational and motivating (2-3 sentences max)."""),
+    Keep responses conversational and motivating (2-3 sentences max).
+    
+    If there's previous conversation context, reference it naturally to maintain continuity."""),
     ("human", """
 User's voice request: {voice_message}
 
 Recent submissions summary:
 {submissions_summary}
 
-Provide encouraging insights about their coding progress.
+{chat_history_context}
+
+Provide encouraging insights about their coding progress that maintains conversation flow.
 """)
 ])
 
@@ -77,11 +89,29 @@ def _get_llm() -> ChatOpenAI:
     return _llm
 
 
+def _format_chat_history(chat_history: Optional[List[Dict[str, str]]]) -> str:
+    """Format chat history for inclusion in prompts."""
+    if not chat_history:
+        return ""
+    
+    formatted_messages = []
+    for message in chat_history[-3:]:  # Only include last 3 messages for context
+        role = message.get("role", "")
+        content = message.get("content", "")
+        if role and content:
+            formatted_messages.append(f"{role.capitalize()}: {content}")
+    
+    if formatted_messages:
+        return f"Previous conversation:\n" + "\n".join(formatted_messages) + "\n"
+    return ""
+
+
 async def analyze_code_with_voice_context(
     code: str,
     voice_message: str,
     language: str = "python",
-    problem_description: Optional[str] = None
+    problem_description: Optional[str] = None,
+    chat_history: Optional[List[Dict[str, str]]] = None
 ) -> str:
     """Generate AI-powered code analysis based on voice input context."""
     try:
@@ -89,9 +119,13 @@ async def analyze_code_with_voice_context(
         
         problem_text = problem_description or "No specific problem context provided."
         
+        # Format chat history
+        chat_history_context = _format_chat_history(chat_history)
+        
         messages = _CODE_ANALYSIS_PROMPT.format_messages(
             voice_message=voice_message,
             problem_description=problem_text,
+            chat_history_context=chat_history_context,
             code=code,
             language=language
         )
@@ -110,7 +144,8 @@ async def analyze_code_with_voice_context(
 
 async def provide_general_assistance(
     voice_message: str,
-    context: Optional[str] = None
+    context: Optional[str] = None,
+    chat_history: Optional[List[Dict[str, str]]] = None
 ) -> str:
     """Provide general programming assistance based on voice input."""
     try:
@@ -118,9 +153,13 @@ async def provide_general_assistance(
         
         context_text = context or "General programming assistance request."
         
+        # Format chat history
+        chat_history_context = _format_chat_history(chat_history)
+        
         messages = _GENERAL_ASSISTANCE_PROMPT.format_messages(
             voice_message=voice_message,
-            context=context_text
+            context=context_text,
+            chat_history_context=chat_history_context
         )
         
         response = await llm.ainvoke(messages)
@@ -137,15 +176,16 @@ async def provide_general_assistance(
 
 async def analyze_submission_history(
     voice_message: str,
-    submissions_data: list
+    submissions_data: List[Dict[str, Any]],
+    chat_history: Optional[List[Dict[str, str]]] = None
 ) -> str:
-    """Analyze user's submission history and provide insights."""
+    """Analyze submission history with voice context and conversation history."""
     try:
         llm = _get_llm()
         
-        # Create a summary of submissions for the AI
+        # Format submissions summary
         if not submissions_data:
-            submissions_summary = "No submissions found."
+            submissions_summary = "No recent submissions found."
         else:
             summary_parts = []
             for sub in submissions_data[:5]:  # Limit to recent 5
@@ -154,9 +194,13 @@ async def analyze_submission_history(
                 summary_parts.append(f"- {status} submission in {language}")
             submissions_summary = "\n".join(summary_parts)
         
+        # Format chat history
+        chat_history_context = _format_chat_history(chat_history)
+        
         messages = _SUBMISSION_ANALYSIS_PROMPT.format_messages(
             voice_message=voice_message,
-            submissions_summary=submissions_summary
+            submissions_summary=submissions_summary,
+            chat_history_context=chat_history_context
         )
         
         response = await llm.ainvoke(messages)
@@ -174,9 +218,10 @@ async def analyze_submission_history(
 async def generate_voice_response(
     action: str,
     voice_message: str,
+    chat_history: Optional[List[Dict[str, str]]] = None,
     **kwargs
 ) -> str:
-    """Generate appropriate AI response based on the action and voice context."""
+    """Generate appropriate AI response based on the action and voice context with conversation history."""
     try:
         if action == "analyze_code":
             code = kwargs.get("code", "")
@@ -190,20 +235,33 @@ async def generate_voice_response(
                 code=code,
                 voice_message=voice_message,
                 language=language,
-                problem_description=problem_description
+                problem_description=problem_description,
+                chat_history=chat_history
             )
             
         elif action == "get_submissions":
             submissions = kwargs.get("submissions", [])
-            return await analyze_submission_history(voice_message, submissions)
+            return await analyze_submission_history(
+                voice_message, 
+                submissions,
+                chat_history=chat_history
+            )
             
         elif action == "get_problem":
             problem_data = kwargs.get("problem_data", {})
             context = f"Problem: {problem_data.get('title', 'Unknown')} - {problem_data.get('difficulty', 'Unknown')} difficulty"
-            return await provide_general_assistance(voice_message, context)
+            return await provide_general_assistance(
+                voice_message, 
+                context,
+                chat_history=chat_history
+            )
             
         else:
-            return await provide_general_assistance(voice_message, f"Action: {action}")
+            return await provide_general_assistance(
+                voice_message, 
+                f"Action: {action}",
+                chat_history=chat_history
+            )
             
     except HTTPException:
         raise

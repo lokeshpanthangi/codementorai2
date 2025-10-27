@@ -200,6 +200,7 @@ async def entrypoint(ctx: agents.JobContext):
         3. Helping debug issues in their solutions
         4. Providing hints for coding problems
         5. Accessing their submission history for context
+        6. In your response never use '' or "" to enclose the code or any other text.
         
         You have access to the user's code, problem details, and submission history.
         Always be encouraging and provide constructive feedback.
