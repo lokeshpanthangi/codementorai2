@@ -20,7 +20,13 @@ app = FastAPI(title="CodeMentor API", version="1.0.0")
 frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:8080")
 additional_origins = os.getenv("ADDITIONAL_CORS_ORIGINS", "")
 
-allowed_origins = {frontend_origin.rstrip('/')}
+allowed_origins = {
+    frontend_origin.rstrip('/'),
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+}
 for origin in additional_origins.split(','):
     origin = origin.strip()
     if origin:
@@ -29,7 +35,7 @@ for origin in additional_origins.split(','):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(allowed_origins),
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

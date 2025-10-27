@@ -9,7 +9,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.exceptions import OutputParserException
 
 from fastapi import HTTPException
-from pydantic import SecretStr
 
 _llm: Optional[ChatOpenAI] = None
 _parser = StrOutputParser()
@@ -66,7 +65,7 @@ def _get_llm() -> ChatOpenAI:
                     "on the backend to enable AI insights."
                 ),
             )
-        _llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.4, api_key=SecretStr(api_key))
+        _llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.4, api_key=api_key)
     return _llm
 
 

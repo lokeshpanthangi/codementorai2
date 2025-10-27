@@ -73,8 +73,9 @@ export const wrapUserCode = (config: WrapperConfig, language: string): string =>
     wrapperTemplate, 
     functionName = 'solution',
     functionSignature = '',
-    inputParsing = 'args = input_data',
-    outputFormatting = 'formatted_result = str(result)'
+    inputParsing = `lines = input_data.split('\\n')
+args = tuple(json.loads(line) if line.strip() else '' for line in lines)`,
+    outputFormatting = 'formatted_result = json.dumps(result) if isinstance(result, (list, dict)) else str(result)'
   } = config;
   
   // Use provided wrapper template or default
@@ -133,7 +134,12 @@ if __name__ == "__main__":
     input_data = sys.stdin.read().strip()
     
     # Parse input based on problem's input parsing logic
-    {{INPUT_PARSING}}
+    try:
+        {{INPUT_PARSING}}
+    except:
+        # Fallback: try JSON parsing each line
+        lines = input_data.split('\\n')
+        args = tuple(json.loads(line) for line in lines)
     
     # Create solution instance and call the function
     solution = Solution()

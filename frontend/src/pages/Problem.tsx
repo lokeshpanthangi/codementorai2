@@ -32,8 +32,10 @@ import {
 import { toast } from "sonner";
 import { submitCode, runTestCases, checkJudge0Status, STATUS_DESCRIPTIONS } from "@/services/judge0Service";
 import { analyzeCode } from "@/services/aiService";
-import { getProblemBySlug, Problem as ProblemType } from "@/services/problemsService";
-import { getPublicTestCases, getHiddenTestCases, TestCase } from "@/services/testCasesService";
+import { getProblemBySlug, getQuestionBySlug, Problem as ProblemType, Question as QuestionType } from "@/services/problemsService";
+import { getPublicTestCases, getHiddenTestCases, TestCase, convertTestCaseToInput, getExpectedOutput } from "@/services/testCasesService";
+import { createSubmission } from "@/services/submissionsService";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -54,9 +56,10 @@ import MonacoEditor from "@/components/MonacoEditor";
 const Problem = () => {
   const { id: slugParam } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Problem data state
-  const [problem, setProblem] = useState<ProblemType | null>(null);
+  const [problem, setProblem] = useState<QuestionType | null>(null);
   const [isLoadingProblem, setIsLoadingProblem] = useState(true);
   const [problemError, setProblemError] = useState<string | null>(null);
   
@@ -105,7 +108,7 @@ const Problem = () => {
         stdout?: string | null;
         status?: { description: string };
       }>,
-      metaCases: Array<{ input: string; expected_output: string; is_hidden: boolean }>
+      metaCases: Array<{ stdin: string; expected_stdout: string; is_hidden: boolean }>
     ): string => {
       if (!results || results.length === 0) {
         return 'No tests were executed yet.';
@@ -126,12 +129,12 @@ const Problem = () => {
 
       if (meta?.is_hidden) {
         summary += ' Expected output is hidden.';
-      } else if (meta?.expected_output) {
-        summary += ` Expected: ${meta.expected_output}.`;
+      } else if (meta?.expected_stdout) {
+        summary += ` Expected: ${meta.expected_stdout}.`;
       }
 
-      if (meta?.input) {
-        summary += ` Input: ${meta.input}.`;
+      if (meta?.stdin) {
+        summary += ` Input: ${meta.stdin}.`;
       }
 
       return summary;
@@ -240,14 +243,15 @@ public:
       try {
         setIsLoadingProblem(true);
         setProblemError(null);
-        const data = await getProblemBySlug(slugParam);
+        const data = await getQuestionBySlug(slugParam);
         setProblem(data);
         
         // Initialize with boilerplate code for the default language
         const initialLang = 'python';
         setLanguage(initialLang);
-        const initialBoilerplate = data.boilerplates?.[initialLang] || getDefaultTemplate(initialLang);
-        setCode(initialBoilerplate);
+        // Find boilerplate for the language
+        const boilerplate = data.boilerplates?.find(b => b.language_name === initialLang)?.code || getDefaultTemplate(initialLang);
+        setCode(boilerplate);
       } catch (error: any) {
         console.error('Failed to fetch problem:', error);
         setProblemError(error.response?.data?.detail || 'Failed to load problem');
@@ -265,7 +269,7 @@ public:
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage);
     // Load boilerplate for the new language
-    const boilerplate = problem?.boilerplates?.[newLanguage] || getDefaultTemplate(newLanguage);
+    const boilerplate = problem?.boilerplates?.find(b => b.language_name === newLanguage)?.code || getDefaultTemplate(newLanguage);
     setCode(boilerplate);
     setAiInsights([]); // Clear insights when changing language
     setLastTestFeedback('');
@@ -449,13 +453,13 @@ public:
   // Fetch test cases when problem is loaded
   useEffect(() => {
     const fetchTestCases = async () => {
-      if (!problem?.id) return;
+      if (!problem?._id) return;
 
       try {
         setIsLoadingTestCases(true);
         const [publicCases, hidden] = await Promise.all([
-          getPublicTestCases(problem.id),
-          getHiddenTestCases(problem.id)
+          getPublicTestCases(problem._id),
+          getHiddenTestCases(problem._id)
         ]);
         setVisibleTestCases(publicCases);
         setHiddenTestCases(hidden);
@@ -473,7 +477,7 @@ public:
     };
 
     fetchTestCases();
-  }, [problem?.id]);
+  }, [problem?._id]);
 
   const ensureJudge0Online = async () => {
     const available = await checkJudge0Status();
@@ -508,34 +512,32 @@ public:
     try {
       // Convert TestCase[] to the format expected by runTestCases
       const testCasesForExecution = visibleTestCases.map(tc => ({
-        input: tc.input,
-        expectedOutput: tc.expected_output
+        input: convertTestCaseToInput(tc),
+        expectedOutput: getExpectedOutput(tc)
       }));
       
-      // Get wrapper code for this language if available
-      const wrapperCode = problem?.wrapper_code?.[language];
-      const functionName = problem?.function_name || 'solution';
+      // Use run_template to combine user code with template
+      let finalCode = code;
+      if (problem?.run_template) {
+        finalCode = code + '\n\n' + problem.run_template;
+      }
       
       // Run code with all visible test cases
       const results = await runTestCases(
-        code, 
+        finalCode, 
         language, 
         testCasesForExecution,
         undefined,
-        functionName,
+        'solution',
         { 
-          noWrap: false,
-          wrapperTemplate: wrapperCode,
-          functionSignature: problem?.function_signature?.[language] || '',
-          inputParsing: problem?.input_parsing?.[language] || 'args = input_data',
-          outputFormatting: problem?.output_formatting?.[language] || 'formatted_result = str(result)'
+          noWrap: true // Don't wrap since we're using run_template
         }
       );
       setTestResults(results);
 
       const metaCases = visibleTestCases.map((tc) => ({
-        input: tc.input,
-        expected_output: tc.expected_output,
+        stdin: tc.stdin,
+        expected_stdout: tc.expected_stdout,
         is_hidden: false,
       }));
       setLastTestFeedback(buildTestFeedback(results, metaCases));
@@ -586,45 +588,40 @@ public:
 
     try {
       const testCasesForExecution = allTestCases.map(tc => ({
-        input: tc.input,
-        expectedOutput: tc.expected_output
+        input: convertTestCaseToInput(tc),
+        expectedOutput: getExpectedOutput(tc)
       }));
 
-      // Get wrapper configuration from problem data
-      const wrapperCode = problem?.wrapper_code?.[language];
-      const functionName = problem?.function_name || 'solution';
-      const functionSignature = problem?.function_signature?.[language] || '';
-      const inputParsing = problem?.input_parsing?.[language] || 'args = input_data';
-      const outputFormatting = problem?.output_formatting?.[language] || 'formatted_result = str(result)';
+      // Use run_template to combine user code with template
+      let finalCode = code;
+      if (problem?.run_template) {
+        finalCode = code + '\n\n' + problem.run_template;
+      }
 
       const results = await runTestCases(
-        code, 
+        finalCode, 
         language, 
         testCasesForExecution,
         undefined,
-        functionName,
+        'solution',
         { 
-          noWrap: false,
-          wrapperTemplate: wrapperCode,
-          functionSignature,
-          inputParsing,
-          outputFormatting
+          noWrap: true // Don't wrap since we're using run_template
         }
       );
 
       const enrichedResults = results.map((result, index) => ({
         ...result,
         isHidden: allTestCases[index]?.is_hidden ?? false,
-        input: allTestCases[index]?.input ?? '',
-        expectedOutput: allTestCases[index]?.expected_output ?? ''
+        input: allTestCases[index]?.stdin ?? '',
+        expectedOutput: allTestCases[index]?.expected_stdout ?? ''
       }));
 
       // Update bottom panel with latest visible case results
       setTestResults(enrichedResults.slice(0, visibleTestCases.length));
 
       const submissionMetaCases = allTestCases.map((tc) => ({
-        input: tc.input,
-        expected_output: tc.expected_output,
+        stdin: tc.stdin,
+        expected_stdout: tc.expected_stdout,
         is_hidden: !!tc.is_hidden,
       }));
       setLastTestFeedback(buildTestFeedback(enrichedResults, submissionMetaCases));
@@ -651,6 +648,32 @@ public:
       });
 
       setActiveTab("result");
+
+      // Store submission in database
+      if (user && problem) {
+        try {
+          const submissionData = {
+            user_id: user.id!,
+            problem_id: problem.id,
+            code: finalCode,
+            language: language,
+            status: passedCount === totalCount ? "Accepted" : "Wrong Answer" as const,
+            execution_time: avgTime,
+            test_results: enrichedResults.map((result, index) => ({
+              test_case_id: allTestCases[index]?.id || undefined,
+              status: result.passed ? "Passed" : "Failed",
+              output: result.stdout || result.stderr || "",
+              exec_time: parseFloat(result.time) || 0
+            }))
+          };
+
+          await createSubmission(submissionData);
+          console.log('✅ Submission stored successfully');
+        } catch (submissionError: any) {
+          console.error('❌ Failed to store submission:', submissionError);
+          // Don't show error to user as the code execution was successful
+        }
+      }
 
       if (passedCount === totalCount) {
         toast.success("Accepted! All test cases passed! 🎉", {
@@ -774,15 +797,8 @@ public:
                     }>
                       {problem.difficulty}
                     </Badge>
-                    {problem.topics.map((topic, idx) => (
-                      <Badge key={idx} variant="outline">{topic}</Badge>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {problem.companies.map((company, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {company}
-                      </Badge>
+                    {problem.tags.map((tag, idx) => (
+                      <Badge key={idx} variant="outline">{tag}</Badge>
                     ))}
                   </div>
                 </div>
@@ -1237,7 +1253,7 @@ public:
                               <div>
                                 <p className="text-sm font-medium text-muted-foreground mb-2">Input:</p>
                                 <code className="block p-2 rounded bg-muted/50 text-sm whitespace-pre-wrap">
-                                  {visibleTestCases[selectedTestCase - 1]?.input || "N/A"}
+                                  {visibleTestCases[selectedTestCase - 1]?.stdin || "N/A"}
                                 </code>
                               </div>
 
@@ -1245,7 +1261,7 @@ public:
                               <div>
                                 <p className="text-sm font-medium text-muted-foreground mb-1">Expected Output:</p>
                                 <code className="block p-2 rounded bg-muted/50 text-sm whitespace-pre-wrap">
-                                  {visibleTestCases[selectedTestCase - 1]?.expected_output || "N/A"}
+                                  {visibleTestCases[selectedTestCase - 1]?.expected_stdout || "N/A"}
                                 </code>
                               </div>
 

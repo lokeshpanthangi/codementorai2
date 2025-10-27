@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
-import { getProblems, type Problem } from "@/services/problemsService";
+import { getProblems, getQuestions, type Problem, type Question } from "@/services/problemsService";
 import { toast } from "sonner";
 import {
   Search,
@@ -28,8 +28,8 @@ import { Progress } from "@/components/ui/progress";
 
 const Problems = () => {
   const { user } = useAuth();
-  const [problems, setProblems] = useState<Problem[]>([]);
-  const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]);
+  const [problems, setProblems] = useState<Question[]>([]);
+  const [filteredProblems, setFilteredProblems] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [difficulty, setDifficulty] = useState("All");
   const [status, setStatus] = useState("All");
@@ -49,7 +49,7 @@ const Problems = () => {
   const fetchProblems = async () => {
     try {
       setLoading(true);
-      const data = await getProblems();
+      const data = await getQuestions();
       setProblems(data);
       setFilteredProblems(data);
     } catch (error: any) {
@@ -72,7 +72,7 @@ const Problems = () => {
     // Topic filter
     if (selectedTopic !== "all") {
       filtered = filtered.filter((p) => 
-        p.topics.some(topic => topic.toLowerCase() === selectedTopic.toLowerCase())
+        p.tags.some(topic => topic.toLowerCase() === selectedTopic.toLowerCase())
       );
     }
 
@@ -105,9 +105,9 @@ const Problems = () => {
     setCurrentPage(1);
   };
 
-  // Extract unique topics from problems
-  const allTopics = Array.from(
-    new Set(problems.flatMap((p) => p.topics))
+  // Extract unique tags from problems
+  const allTags = Array.from(
+    new Set(problems.flatMap((p) => p.tags))
   ).sort();
 
   // Pagination
@@ -163,13 +163,13 @@ const Problems = () => {
 
             <Select value={selectedTopic} onValueChange={setSelectedTopic}>
               <SelectTrigger className="w-[180px] bg-background/50">
-                <SelectValue placeholder="All Topics" />
+                <SelectValue placeholder="All Tags" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border z-50">
-                <SelectItem value="all">All Topics</SelectItem>
-                {allTopics.map((topic) => (
-                  <SelectItem key={topic} value={topic.toLowerCase()}>
-                    {topic}
+                <SelectItem value="all">All Tags</SelectItem>
+                {allTags.map((tag) => (
+                  <SelectItem key={tag} value={tag.toLowerCase()}>
+                    {tag}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -281,7 +281,7 @@ const Problems = () => {
                       Title
                     </th>
                     <th className="p-4 font-semibold text-sm text-muted-foreground">
-                      Topics
+                      Tags
                     </th>
                     <th className="p-4 font-semibold text-sm text-muted-foreground w-32">
                       Difficulty
@@ -310,14 +310,14 @@ const Problems = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1">
-                          {problem.topics.slice(0, 3).map((topic) => (
+                          {problem.tags.slice(0, 3).map((topic) => (
                             <Badge key={topic} variant="outline" className="text-xs">
                               {topic}
                             </Badge>
                           ))}
-                          {problem.topics.length > 3 && (
+                          {problem.tags.length > 3 && (
                             <Badge variant="outline" className="text-xs">
-                              +{problem.topics.length - 3}
+                              +{problem.tags.length - 3}
                             </Badge>
                           )}
                         </div>

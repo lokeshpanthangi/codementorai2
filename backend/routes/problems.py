@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
 
 from crud.problems import create_problem, get_problem_by_id, get_problem_by_slug, list_problems
 from auth import verify_access_token
+from schemas import QuestionCreate, QuestionResponse, ProblemCreate, ProblemResponse, ProblemExample
 
 
 problem_router = APIRouter(
@@ -15,54 +15,18 @@ problem_router = APIRouter(
 )
 
 
-class ProblemExample(BaseModel):
-    input: str
-    output: str
-    explanation: Optional[str] = None
+@problem_router.post("/", response_model=QuestionResponse, status_code=status.HTTP_201_CREATED)
+async def create_question_route(payload: QuestionCreate) -> QuestionResponse:
+    try:
+        question = await create_problem(**payload.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    return QuestionResponse.model_validate(question)
 
 
-class ProblemCreate(BaseModel):
-    title: str = Field(..., min_length=3, max_length=200)
-    slug: str = Field(..., min_length=3, max_length=200)
-    difficulty: str = Field(..., pattern="^(Easy|Medium|Hard)$")
-    description: str
-    input_format: str
-    output_format: str
-    constraints: str
-    topics: List[str] = Field(default_factory=list)
-    companies: List[str] = Field(default_factory=list)
-    examples: List[ProblemExample] = Field(default_factory=list)
-    boilerplates: Dict[str, str] = Field(default_factory=dict)
-    wrapper_code: Dict[str, str] = Field(default_factory=dict)
-    function_name: str = Field(default="solution")
-    function_signature: Dict[str, str] = Field(default_factory=dict)  # Language -> function signature
-    input_parsing: Dict[str, str] = Field(default_factory=dict)  # Language -> input parsing code
-    output_formatting: Dict[str, str] = Field(default_factory=dict)  # Language -> output formatting code
-
-
-class ProblemResponse(BaseModel):
-    id: str
-    title: str
-    slug: str
-    difficulty: str
-    description: str
-    input_format: str
-    output_format: str
-    constraints: str
-    topics: List[str]
-    companies: List[str]
-    examples: List[ProblemExample]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    boilerplates: Dict[str, str]
-    wrapper_code: Dict[str, str]
-    function_name: str
-    function_signature: Dict[str, str]
-    input_parsing: Dict[str, str]
-    output_formatting: Dict[str, str]
-
-
-@problem_router.post("/", response_model=ProblemResponse, status_code=status.HTTP_201_CREATED)
+# Legacy endpoint for backward compatibility
+@problem_router.post("/legacy", response_model=ProblemResponse, status_code=status.HTTP_201_CREATED)
 async def create_problem_route(payload: ProblemCreate) -> ProblemResponse:
     try:
         problem = await create_problem(**payload.model_dump())
@@ -72,13 +36,30 @@ async def create_problem_route(payload: ProblemCreate) -> ProblemResponse:
     return ProblemResponse.model_validate(problem)
 
 
-@problem_router.get("/", response_model=List[ProblemResponse])
+@problem_router.get("/", response_model=List[QuestionResponse])
+async def list_questions_route(difficulty: Optional[str] = Query(None, pattern="^(Easy|Medium|Hard)$")) -> List[QuestionResponse]:
+    questions = await list_problems(difficulty)
+    return [QuestionResponse.model_validate(question) for question in questions]
+
+
+# Legacy endpoint for backward compatibility
+@problem_router.get("/legacy", response_model=List[ProblemResponse])
 async def list_problems_route(difficulty: Optional[str] = Query(None, pattern="^(Easy|Medium|Hard)$")) -> List[ProblemResponse]:
     problems = await list_problems(difficulty)
     return [ProblemResponse.model_validate(problem) for problem in problems]
 
 
-@problem_router.get("/id/{problem_id}", response_model=ProblemResponse)
+@problem_router.get("/id/{question_id}", response_model=QuestionResponse)
+async def get_question_by_id_route(question_id: str) -> QuestionResponse:
+    question = await get_problem_by_id(question_id)
+    if not question:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
+
+    return QuestionResponse.model_validate(question)
+
+
+# Legacy endpoint for backward compatibility
+@problem_router.get("/legacy/id/{problem_id}", response_model=ProblemResponse)
 async def get_problem_by_id_route(problem_id: str) -> ProblemResponse:
     problem = await get_problem_by_id(problem_id)
     if not problem:
@@ -87,7 +68,17 @@ async def get_problem_by_id_route(problem_id: str) -> ProblemResponse:
     return ProblemResponse.model_validate(problem)
 
 
-@problem_router.get("/{slug}", response_model=ProblemResponse)
+@problem_router.get("/{slug}", response_model=QuestionResponse)
+async def get_question_route(slug: str) -> QuestionResponse:
+    question = await get_problem_by_slug(slug)
+    if not question:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
+
+    return QuestionResponse.model_validate(question)
+
+
+# Legacy endpoint for backward compatibility
+@problem_router.get("/legacy/{slug}", response_model=ProblemResponse)
 async def get_problem_route(slug: str) -> ProblemResponse:
     problem = await get_problem_by_slug(slug)
     if not problem:

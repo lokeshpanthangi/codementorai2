@@ -8,7 +8,7 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import * as problemsService from "@/services/problemsService";
-import type { Problem } from "@/services/problemsService";
+import type { Question } from "@/services/problemsService";
 import {
   Code2,
   CheckCircle2,
@@ -32,15 +32,15 @@ const Dashboard = () => {
   const { user } = useAuth();
   
   // State for problems
-  const [allProblems, setAllProblems] = useState<Problem[]>([]);
-  const [displayedProblems, setDisplayedProblems] = useState<Problem[]>([]);
+  const [allProblems, setAllProblems] = useState<Question[]>([]);
+  const [displayedProblems, setDisplayedProblems] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Filter states
   const [difficultyFilter, setDifficultyFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -54,11 +54,11 @@ const Dashboard = () => {
         setLoading(true);
         setError(null);
         
-        let problems: Problem[];
+        let problems: Question[];
         if (difficultyFilter === "All") {
-          problems = await problemsService.getProblems();
+          problems = await problemsService.getQuestions();
         } else {
-          problems = await problemsService.getProblems(difficultyFilter as 'Easy' | 'Medium' | 'Hard');
+          problems = await problemsService.getQuestions(difficultyFilter as 'Easy' | 'Medium' | 'Hard');
         }
         
         setAllProblems(problems);
@@ -79,8 +79,8 @@ const Dashboard = () => {
 
   const getFilteredProblems = useCallback(() => {
     // Apply search and topic filters
-    return problemsService.filterProblems(allProblems, searchQuery, selectedTopics.length > 0 ? selectedTopics : undefined);
-  }, [allProblems, searchQuery, selectedTopics]);
+    return problemsService.filterProblems(allProblems, searchQuery, selectedTags.length > 0 ? selectedTags : undefined);
+  }, [allProblems, searchQuery, selectedTags]);
 
   const loadMoreProblems = useCallback(() => {
     if (loading || !hasMore) return;
@@ -103,7 +103,7 @@ const Dashboard = () => {
     setDisplayedProblems([]);
     setPage(1);
     setHasMore(true);
-  }, [searchQuery, selectedTopics]);
+  }, [searchQuery, selectedTags]);
 
   useEffect(() => {
     if (displayedProblems.length === 0) {
@@ -138,8 +138,8 @@ const Dashboard = () => {
     }
   };
 
-  // Get unique topics from all problems
-  const availableTopics = problemsService.getUniqueTopics(allProblems);
+  // Get unique tags from all problems
+  const availableTags = problemsService.getUniqueTags(allProblems);
   
   // Calculate stats
   const totalProblems = allProblems.length;
@@ -245,8 +245,8 @@ const Dashboard = () => {
                         <p className="font-medium text-lg mb-2">{problem.title}</p>
                         <div className="flex items-center gap-2 mb-2">
                           <Badge className={getDifficultyColor(problem.difficulty)}>{problem.difficulty}</Badge>
-                          {problem.topics[0] && (
-                            <span className="text-sm text-muted-foreground">{problem.topics[0]}</span>
+                          {problem.tags[0] && (
+                            <span className="text-sm text-muted-foreground">{problem.tags[0]}</span>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2">
@@ -389,19 +389,19 @@ const Dashboard = () => {
                   </SelectContent>
                 </Select>
 
-                {/* Topic Filter (optional - can be added later) */}
-                {availableTopics.length > 0 && (
+                {/* Tag Filter (optional - can be added later) */}
+                {availableTags.length > 0 && (
                   <Select 
-                    value={selectedTopics.length > 0 ? selectedTopics[0] : "All"}
-                    onValueChange={(value) => setSelectedTopics(value === "All" ? [] : [value])}
+                    value={selectedTags.length > 0 ? selectedTags[0] : "All"}
+                    onValueChange={(value) => setSelectedTags(value === "All" ? [] : [value])}
                   >
                     <SelectTrigger className="w-full md:w-[180px] bg-background/50">
-                      <SelectValue placeholder="Topic" />
+                      <SelectValue placeholder="Tag" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="All">All Topics</SelectItem>
-                      {availableTopics.slice(0, 10).map((topic) => (
-                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+                      <SelectItem value="All">All Tags</SelectItem>
+                      {availableTags.slice(0, 10).map((tag) => (
+                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -452,7 +452,7 @@ const Dashboard = () => {
                                   {problem.title}
                                 </h3>
                                 <div className="flex flex-wrap gap-2 mt-1">
-                                  {problem.topics.slice(0, 3).map((topic, idx) => (
+                                  {problem.tags.slice(0, 3).map((topic, idx) => (
                                     <span key={idx} className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
                                       {topic}
                                     </span>
