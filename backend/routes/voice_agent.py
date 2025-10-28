@@ -182,11 +182,16 @@ async def entrypoint(ctx: agents.JobContext):
     assistant = CodingAssistant()
     
     # Create the voice assistant with proper LiveKit v1 syntax
+    base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
+    llm_model = os.getenv("LLM_CHOICE", "gpt-4o-mini")
+    llm = openai.LLM(model=llm_model, base_url=base_url) if base_url else openai.LLM(model=llm_model)
+    tts = openai.TTS(voice="echo", base_url=base_url) if base_url else openai.TTS(voice="echo")
+
     voice_assistant = VoiceAssistant(
         vad=silero.VAD.load(),
         stt=deepgram.STT(model="nova-2"),
-        llm=openai.LLM(model=os.getenv("LLM_CHOICE", "gpt-4o-mini")),
-        tts=openai.TTS(voice="echo"),
+        llm=llm,
+        tts=tts,
         fnc_ctx=assistant,  # Pass the assistant instance for function tools
     )
     

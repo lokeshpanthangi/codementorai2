@@ -1,0 +1,12 @@
+# Environment files
+.env
+frontend/.env
+backend/.env
+backend/app.yaml
+
+# Docker files (prevent accidental exposure/commit)
+Dockerfile
+backend/Dockerfile
+backend/Dockerfile.voice
+.dockerignore
+backend/.dockerignore

@@ -1,4 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Resolve API base URL for both local and deployed environments
+// Priority: VITE_API_URL -> VITE_API_BASE_URL -> VITE_API_BASE -> window.location.origin -> localhost fallback
+const API_BASE_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  (import.meta.env.VITE_API_BASE as string | undefined) ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000');
 
 export interface ChatMessage {
   role: 'user' | 'assistant';

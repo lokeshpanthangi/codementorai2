@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./backend
+    image: codementor-backend:compose
+    container_name: codementor-backend
+    ports:
+      - "8081:8080"
+    env_file:
+      - backend/.env
+    environment:
+      # Non-secret defaults and overrides can be set here; secrets come from env_file
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      LLM_CHOICE: ${LLM_CHOICE:-gpt-4o}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8081}
+      ADDITIONAL_CORS_ORIGINS: ${ADDITIONAL_CORS_ORIGINS:-}
+    restart: unless-stopped

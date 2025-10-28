@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from typing import Optional, Sequence
 
+import logging
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -11,6 +12,7 @@ from langchain_core.exceptions import OutputParserException
 from fastapi import HTTPException
 
 _llm: Optional[ChatOpenAI] = None
+_logger = logging.getLogger("services.ai")
 _parser = StrOutputParser()
 
 _SYSTEM_PROMPT = (
@@ -58,6 +60,7 @@ def _get_llm() -> ChatOpenAI:
     if _llm is None:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
+            _logger.error("OPENAI_API_KEY is not set; AI hint service unavailable")
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -65,7 +68,13 @@ def _get_llm() -> ChatOpenAI:
                     "on the backend to enable AI insights."
                 ),
             )
-        _llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.4, api_key=api_key)
+        base_url = os.getenv("OPENAI_BASE_URL")
+        model = os.getenv("LLM_CHOICE", "gpt-4o-mini")
+        if base_url:
+            _logger.info("Initializing ChatOpenAI with custom base_url: %s", base_url)
+            _llm = ChatOpenAI(model=model, temperature=0.4, api_key=api_key, base_url=base_url)
+        else:
+            _llm = ChatOpenAI(model=model, temperature=0.4, api_key=api_key)
     return _llm
 
 
@@ -105,10 +114,12 @@ async def generate_hint(
         content = response.content if isinstance(response.content, str) else str(response.content)
         hint = _parser.parse(content)
     except OutputParserException as exc:
+        _logger.exception("Failed to parse hint from AI response")
         raise HTTPException(status_code=500, detail="Failed to parse hint from AI response") from exc
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover - catch-all for upstream API errors
+        _logger.exception("OpenAI call failed or upstream error during hint generation")
         raise HTTPException(status_code=502, detail="AI hint service is currently unavailable") from exc
 
     return hint.strip()

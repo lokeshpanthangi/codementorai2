@@ -2,15 +2,20 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 import jwt
-from pydantic import BaseModel
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
+# Read JWT settings from environment (no hardcoded secrets)
+JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
-JWT_SECRET = "your_jwt_secret"
-JWT_ALGORITHM = "HS256"
+if not JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET is not configured. Set the JWT_SECRET environment variable to a strong secret."
+    )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 

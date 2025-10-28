@@ -85,7 +85,20 @@ def _get_llm() -> ChatOpenAI:
                 status_code=503,
                 detail="AI service is not configured. Set the OPENAI_API_KEY environment variable."
             )
-        _llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, api_key=api_key)
+        # Support regional routing and model selection
+        base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
+        model_choice = os.getenv("LLM_CHOICE", "gpt-4o-mini")
+        try:
+            if base_url:
+                _llm = ChatOpenAI(model=model_choice, temperature=0.7, api_key=api_key, base_url=base_url)
+            else:
+                _llm = ChatOpenAI(model=model_choice, temperature=0.7, api_key=api_key)
+        except TypeError:
+            # Fallback for older langchain-openai versions that use openai_api_base
+            if base_url:
+                _llm = ChatOpenAI(model=model_choice, temperature=0.7, api_key=api_key, openai_api_base=base_url)
+            else:
+                _llm = ChatOpenAI(model=model_choice, temperature=0.7, api_key=api_key)
     return _llm
 
 
