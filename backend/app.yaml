@@ -3,11 +3,11 @@ service: default
 entrypoint: gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app
 
 env_variables:
-  MONGO_URL: "mongodb+srv://nani:Q2hszywkvb@cluster0.nkdfumb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+  MONGO_URL: "<set-in-secret-manager>"
   DATABASE_NAME: "codementor"
-  OPENAI_API_KEY: "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"
+  OPENAI_API_KEY: "<set-in-secret-manager>"
   LIVEKIT_URL: "wss://slack-ai-e59s5qtm.livekit.cloud"
-  LIVEKIT_API_KEY: "APIm7AcaWpPdrQz"
-  LIVEKIT_API_SECRET: "D50VI6UY8dCzlnVuif1sMYJp9eNkCOjMeMa0d5zkqEQA"
-  DEEPGRAM_API_KEY: "90fca8dafe48bedab323c3f41d716ecc7c656d4f"
+  LIVEKIT_API_KEY: "<set-in-secret-manager>"
+  LIVEKIT_API_SECRET: "<set-in-secret-manager>"
+  DEEPGRAM_API_KEY: "<set-in-secret-manager>"
   LLM_CHOICE: "gpt-4o"

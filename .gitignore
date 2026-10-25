@@ -10,3 +10,6 @@ backend/Dockerfile
 backend/Dockerfile.voice
 .dockerignore
 backend/.dockerignore
+# Python bytecode
+__pycache__/
+*.pyc
